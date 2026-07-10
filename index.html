@@ -132,7 +132,13 @@
     <div class="mung-ui">
       <div class="mung-top">
         <span id="mung-scene-name" class="mung-scene-name">멍 공간</span>
-        <button id="mung-bgm-toggle" class="ghost-btn active" type="button" title="멍 배경음">🎵</button>
+        <div class="mung-bgm-control">
+          <button id="mung-bgm-toggle" class="ghost-btn active" type="button" title="멍 배경음 켜기/끄기">🎵</button>
+          <label class="mung-volume-wrap" title="멍 배경음 크기">
+            <span class="mung-volume-icon" aria-hidden="true">🔈</span>
+            <input id="mung-bgm-volume" class="mung-volume-slider" type="range" min="0" max="100" value="70" aria-label="멍 배경음 볼륨" />
+          </label>
+        </div>
         <button id="mung-next-scene" class="ghost-btn" type="button">다른 멍</button>
         <button id="mung-close" class="ghost-btn" type="button">나가기</button>
       </div>

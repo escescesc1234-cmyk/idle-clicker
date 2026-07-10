@@ -4,6 +4,8 @@ const CloudAudio = (() => {
   let mungBgmNodes = null;
   let bgmEnabled = false;
   let mungBgmEnabled = false;
+  let mungBgmVolume = 0.7;
+  const MUNG_BGM_MAX_VOLUME = 0.12;
   let sfxEnabled = true;
   let mainBgmWasOn = false;
 
@@ -186,10 +188,37 @@ const CloudAudio = (() => {
     bgmEnabled = false;
   }
 
+  function getMungMasterVolume() {
+    return MUNG_BGM_MAX_VOLUME * mungBgmVolume;
+  }
+
+  function applyMungMasterVolume() {
+    if (!mungBgmNodes?.master) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    const target = mungBgmEnabled ? getMungMasterVolume() : 0.0001;
+    mungBgmNodes.master.gain.cancelScheduledValues(now);
+    mungBgmNodes.master.gain.setValueAtTime(mungBgmNodes.master.gain.value, now);
+    mungBgmNodes.master.gain.linearRampToValueAtTime(Math.max(target, 0.0001), now + 0.15);
+  }
+
+  function setMungBgmVolume(level) {
+    mungBgmVolume = Math.max(0, Math.min(1, level));
+    applyMungMasterVolume();
+    return mungBgmVolume;
+  }
+
+  function getMungBgmVolume() {
+    return mungBgmVolume;
+  }
+
   function startMungBgm() {
-    if (mungBgmEnabled) return;
+    if (mungBgmEnabled) {
+      applyMungMasterVolume();
+      return;
+    }
     mungBgmNodes = buildAmbientBgm({
-      volume: 0.1,
+      volume: getMungMasterVolume(),
       freqs: [110.0, 146.83, 174.61, 220.0, 261.63],
       noiseLevel: 0.022,
     });
@@ -254,6 +283,8 @@ const CloudAudio = (() => {
     exitMungAudio,
     toggleBgm,
     toggleMungBgm,
+    setMungBgmVolume,
+    getMungBgmVolume,
     toggleSfx,
     setSfxEnabled,
     isBgmEnabled,

@@ -147,7 +147,7 @@ const defaultState = () => ({
   productionMult: 1,
   owned: Object.fromEntries(SHOP_ITEMS.map((item) => [item.id, 0])),
   lastSave: Date.now(),
-  settings: { bgm: false, sfx: true },
+  settings: { bgm: false, sfx: true, mungBgmVolume: 0.7 },
 });
 
 let state = defaultState();
@@ -176,6 +176,8 @@ const mungCloudDisplay = document.getElementById("mung-cloud-display");
 const mungCloseBtn = document.getElementById("mung-close");
 const mungNextSceneBtn = document.getElementById("mung-next-scene");
 const mungBgmToggle = document.getElementById("mung-bgm-toggle");
+const mungBgmVolume = document.getElementById("mung-bgm-volume");
+const mungVolumeWrap = document.querySelector(".mung-volume-wrap");
 
 window.GameBridge = {
   getSnapshot: () => ({
@@ -423,6 +425,7 @@ function enterMungMode() {
 
   applyMungScene(pickRandomScene());
   CloudAudio.enterMungAudio();
+  applyMungBgmVolumeFromSettings();
   syncMungBgmButton();
 
   if (window.MungPlay) MungPlay.start();
@@ -440,13 +443,35 @@ function exitMungMode() {
 }
 
 function syncMungBgmButton() {
-  mungBgmToggle.classList.toggle("active", CloudAudio.isMungBgmEnabled());
+  const enabled = CloudAudio.isMungBgmEnabled();
+  mungBgmToggle.classList.toggle("active", enabled);
+  mungBgmVolume.disabled = !enabled;
+  mungVolumeWrap.classList.toggle("disabled", !enabled);
+}
+
+function applyMungBgmVolumeFromSettings() {
+  const vol = state.settings.mungBgmVolume ?? 0.7;
+  CloudAudio.setMungBgmVolume(vol);
+  mungBgmVolume.value = String(Math.round(vol * 100));
+}
+
+function onMungBgmVolumeChange() {
+  CloudAudio.unlock();
+  const vol = Number(mungBgmVolume.value) / 100;
+  state.settings.mungBgmVolume = vol;
+  CloudAudio.setMungBgmVolume(vol);
+  if (vol > 0 && !CloudAudio.isMungBgmEnabled() && mungActive) {
+    CloudAudio.startMungBgm();
+  }
+  syncMungBgmButton();
+  saveGame();
 }
 
 function onMungBgmToggle() {
   CloudAudio.unlock();
   CloudAudio.toggleMungBgm();
   syncMungBgmButton();
+  saveGame();
 }
 
 function nextMungScene() {
@@ -507,6 +532,7 @@ function loadGame() {
     if (state.settings.bgm) CloudAudio.startBgm();
 
     CloudAudio.setSfxEnabled(state.settings.sfx !== false);
+    applyMungBgmVolumeFromSettings();
 
     const offlineSeconds = Math.min(
       (Date.now() - (saved.lastSave || Date.now())) / 1000,
@@ -543,6 +569,7 @@ mungEnterBtn.addEventListener("click", enterMungMode);
 mungCloseBtn.addEventListener("click", exitMungMode);
 mungNextSceneBtn.addEventListener("click", nextMungScene);
 mungBgmToggle.addEventListener("click", onMungBgmToggle);
+mungBgmVolume.addEventListener("input", onMungBgmVolumeChange);
 
 document.querySelectorAll(".shop-tab").forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -568,6 +595,7 @@ recalcRates();
 renderShop();
 updateUI();
 syncAudioButtons();
+applyMungBgmVolumeFromSettings();
 
 window.setInterval(tick, TICK_MS);
 window.setInterval(saveGame, SAVE_INTERVAL_MS);
