@@ -22,7 +22,7 @@ const MungPlay = (() => {
   const myBubbleCountEl = document.getElementById("my-bubble-count");
 
   const hints = {
-    listen: "배경과 소리만 감상해요. V 키로도 전환할 수 있어요",
+    listen: "배경과 소리만 감상해요. V 키로 다시 나올 수 있어요",
     cloud: "천천히 눌러도 괜찮아요",
     ripple: "화면 아무 곳이나 눌러 물결을 만들어요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
@@ -55,6 +55,11 @@ const MungPlay = (() => {
     if (window.GameBridge) {
       window.GameBridge.broadcastMungEvent("bubble-pop", { total: myBubblePops });
     }
+  }
+
+  function toggleListen() {
+    if (!active) return;
+    setActivity(activity === "listen" ? "cloud" : "listen");
   }
 
   function setActivity(next) {
@@ -249,6 +254,7 @@ const MungPlay = (() => {
     start,
     stop,
     setActivity,
+    toggleListen,
     handleRemoteEvent,
     getActivity: () => activity,
     getBubblePops,

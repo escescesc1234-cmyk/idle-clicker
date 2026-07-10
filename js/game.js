@@ -31,7 +31,7 @@ const MUNG_SCENES = [
   {
     id: "sky",
     name: "하늘 구경",
-    image: "https://images.unsplash.com/photo-1534088568595-a066f41045a9?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/sky.jpg",
     messages: [
       "구름 모양이 뭐 같아 보여?",
       "오늘은 아무것도 안 해도 돼.",
@@ -42,7 +42,7 @@ const MUNG_SCENES = [
   {
     id: "rain",
     name: "빗소리 멍",
-    image: "https://images.unsplash.com/photo-1428908728789-d2ab25ba7f7a?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/rain.jpg",
     messages: [
       "빗방울 하나씩 세어봐… 아니다 말자.",
       "창밖만 바라봐도 충분해.",
@@ -54,7 +54,7 @@ const MUNG_SCENES = [
   {
     id: "stars",
     name: "별 헤매기",
-    image: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/stars.jpg",
     messages: [
       "별이 반짝일 때마다 숨 쉬어봐.",
       "우주는 넓고 나는 작아… 좋다.",
@@ -65,7 +65,7 @@ const MUNG_SCENES = [
   {
     id: "breath",
     name: "호흡 멍",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/mountain.jpg",
     messages: [
       "들이쉬고…",
       "내쉬고…",
@@ -77,7 +77,7 @@ const MUNG_SCENES = [
   {
     id: "blob",
     name: "없는 생각",
-    image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/forest.jpg",
     messages: [
       "……",
       "뭐 하고 있었더라?",
@@ -88,7 +88,7 @@ const MUNG_SCENES = [
   {
     id: "window",
     name: "창밖 풍경",
-    image: "https://images.unsplash.com/photo-1494500764479-0c8f2919a3ad?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/lake.jpg",
     messages: [
       "저기 나무가 살짝 흔들린다.",
       "버스 지나가는 소리가 들릴 것 같아.",
@@ -99,7 +99,7 @@ const MUNG_SCENES = [
   {
     id: "underwater",
     name: "수면 아래",
-    image: "https://images.unsplash.com/photo-1551244072-5d12893278ab?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/ocean.jpg",
     messages: [
       "물속은 조용해.",
       "천천히 떠다녀도 돼.",
@@ -110,7 +110,7 @@ const MUNG_SCENES = [
   {
     id: "sunset",
     name: "노을 멍",
-    image: "https://images.unsplash.com/photo-1495616811223-4c98c89e2b9a?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/sunset.jpg",
     messages: [
       "하늘이 점점 부드러워져.",
       "오늘은 여기까지.",
@@ -121,7 +121,7 @@ const MUNG_SCENES = [
   {
     id: "grass",
     name: "잔디밭 누워",
-    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
+    image: "images/mung/grass.jpg",
     messages: [
       "누워서 하늘만 봐.",
       "풀 냄새가 날 것 같아.",
@@ -161,6 +161,7 @@ const sfxToggle = document.getElementById("sfx-toggle");
 const mungEnterBtn = document.getElementById("mung-enter");
 const mungOverlay = document.getElementById("mung-overlay");
 const mungSceneEl = document.getElementById("mung-scene");
+const mungBgImg = document.getElementById("mung-bg-img");
 const mungParticlesEl = document.getElementById("mung-particles");
 const mungMessageEl = document.getElementById("mung-message");
 const mungSceneNameEl = document.getElementById("mung-scene-name");
@@ -400,7 +401,10 @@ function applyMungScene(scene) {
   currentScene = scene;
 
   mungSceneEl.className = "mung-scene scene-photo";
-  mungSceneEl.style.backgroundImage = `url("${scene.image}")`;
+  if (mungBgImg) {
+    mungBgImg.src = scene.image;
+    mungBgImg.alt = scene.name;
+  }
   mungSceneNameEl.textContent = scene.name;
 
   if (scene.rain) spawnRain();
@@ -582,9 +586,10 @@ window.addEventListener("beforeunload", saveGame);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && mungActive) exitMungMode();
   if (!mungActive) return;
-  if (event.target.matches("input, textarea")) return;
-  if (event.key === "v" || event.key === "V" || event.key === "ㄷ") {
-    if (window.MungPlay) MungPlay.setActivity("listen");
+  if (event.target.matches("input, textarea, select")) return;
+  if (event.code === "KeyV") {
+    event.preventDefault();
+    if (window.MungPlay) MungPlay.toggleListen();
   }
 });
 
