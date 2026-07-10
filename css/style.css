@@ -584,6 +584,39 @@ body {
   position: absolute;
   inset: 0;
   transition: background 1.2s ease;
+  background-color: #1a2a3a;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.mung-scene.scene-photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.35) 100%);
+  pointer-events: none;
+}
+
+.mung-overlay.listen-mode .mung-activities,
+.mung-overlay.listen-mode .mung-center,
+.mung-overlay.listen-mode .mung-bottom,
+.mung-overlay.listen-mode .bubble-stats,
+.mung-overlay.listen-mode .mung-players {
+  display: none !important;
+}
+
+.mung-overlay.listen-mode .mung-message {
+  margin-top: auto;
+  margin-bottom: auto;
+  font-size: 1.05rem;
+  opacity: 0.85;
+}
+
+.mung-overlay.listen-mode .mung-hint {
+  display: block;
+  text-align: center;
+  margin: 16px auto 0;
 }
 
 .mung-particles {
@@ -998,7 +1031,11 @@ body {
 .mung-activities,
 .mung-center,
 .mung-message,
-.mung-bottom {
+.mung-bottom,
+.mung-hint,
+.mung-bgm-control,
+.mung-volume-wrap,
+.mung-volume-slider {
   pointer-events: auto;
 }
 

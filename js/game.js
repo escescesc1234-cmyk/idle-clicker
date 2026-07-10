@@ -31,19 +31,18 @@ const MUNG_SCENES = [
   {
     id: "sky",
     name: "하늘 구경",
-    className: "scene-sky",
+    image: "https://images.unsplash.com/photo-1534088568595-a066f41045a9?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "구름 모양이 뭐 같아 보여?",
       "오늘은 아무것도 안 해도 돼.",
       "바람 소리만 들어도 충분해.",
       "생각은 구름처럼 떠다녀도 괜찮아.",
     ],
-    particle: { color: "rgba(255,255,255,0.7)", size: [40, 80] },
   },
   {
     id: "rain",
     name: "빗소리 멍",
-    className: "scene-rain",
+    image: "https://images.unsplash.com/photo-1428908728789-d2ab25ba7f7a?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "빗방울 하나씩 세어봐… 아니다 말자.",
       "창밖만 바라봐도 충분해.",
@@ -55,19 +54,18 @@ const MUNG_SCENES = [
   {
     id: "stars",
     name: "별 헤매기",
-    className: "scene-stars",
+    image: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "별이 반짝일 때마다 숨 쉬어봐.",
       "우주는 넓고 나는 작아… 좋다.",
       "오늘 하루도 수고했어.",
       "아무 생각 없이 밤하늘만.",
     ],
-    stars: true,
   },
   {
     id: "breath",
     name: "호흡 멍",
-    className: "scene-breath",
+    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "들이쉬고…",
       "내쉬고…",
@@ -79,62 +77,57 @@ const MUNG_SCENES = [
   {
     id: "blob",
     name: "없는 생각",
-    className: "scene-blob",
+    image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "……",
       "뭐 하고 있었더라?",
       "아무것도 아닌 게 좋은 거야.",
       "멍…",
     ],
-    particle: { color: "rgba(168,212,240,0.5)", size: [20, 50] },
   },
   {
     id: "window",
     name: "창밖 풍경",
-    className: "scene-window",
+    image: "https://images.unsplash.com/photo-1494500764479-0c8f2919a3ad?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "저기 나무가 살짝 흔들린다.",
       "버스 지나가는 소리가 들릴 것 같아.",
       "커튼 너머 하늘이 편해.",
       "그냥 앉아있기만 해도 돼.",
     ],
-    particle: { color: "rgba(255,255,255,0.25)", size: [8, 20] },
   },
   {
     id: "underwater",
     name: "수면 아래",
-    className: "scene-underwater",
+    image: "https://images.unsplash.com/photo-1551244072-5d12893278ab?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "물속은 조용해.",
       "천천히 떠다녀도 돼.",
       "소리가 멀어지는 느낌.",
-      "기포처럼 생각을보내.",
+      "기포처럼 생각을 보내.",
     ],
-    particle: { color: "rgba(255,255,255,0.35)", size: [6, 18] },
   },
   {
     id: "sunset",
     name: "노을 멍",
-    className: "scene-sunset",
+    image: "https://images.unsplash.com/photo-1495616811223-4c98c89e2b9a?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "하늘이 점점 부드러워져.",
       "오늘은 여기까지.",
       "노을은 말이 없어서 좋아.",
       "따뜻한 색에 잠깐 쉬어.",
     ],
-    particle: { color: "rgba(255,220,180,0.4)", size: [30, 60] },
   },
   {
     id: "grass",
     name: "잔디밭 누워",
-    className: "scene-grass",
+    image: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?auto=format&fit=crop&w=1920&q=80",
     messages: [
       "누워서 하늘만 봐.",
       "풀 냄새가 날 것 같아.",
       "바쁘지 않아도 괜찮아.",
       "멍하니… 좋다.",
     ],
-    particle: { color: "rgba(255,255,255,0.3)", size: [4, 12] },
   },
 ];
 
@@ -406,12 +399,12 @@ function applyMungScene(scene) {
   clearMungEffects();
   currentScene = scene;
 
-  mungSceneEl.className = `mung-scene ${scene.className}`;
+  mungSceneEl.className = "mung-scene scene-photo";
+  mungSceneEl.style.backgroundImage = `url("${scene.image}")`;
   mungSceneNameEl.textContent = scene.name;
 
   if (scene.rain) spawnRain();
-  else if (scene.stars) spawnStars();
-  else spawnParticles(scene);
+  else if (scene.id === "stars") spawnStars();
 
   startMessageCycle(scene);
 }
@@ -445,8 +438,8 @@ function exitMungMode() {
 function syncMungBgmButton() {
   const enabled = CloudAudio.isMungBgmEnabled();
   mungBgmToggle.classList.toggle("active", enabled);
-  mungBgmVolume.disabled = !enabled;
-  mungVolumeWrap.classList.toggle("disabled", !enabled);
+  mungBgmVolume.disabled = false;
+  mungVolumeWrap.classList.toggle("disabled", false);
 }
 
 function applyMungBgmVolumeFromSettings() {
@@ -460,7 +453,7 @@ function onMungBgmVolumeChange() {
   const vol = Number(mungBgmVolume.value) / 100;
   state.settings.mungBgmVolume = vol;
   CloudAudio.setMungBgmVolume(vol);
-  if (vol > 0 && !CloudAudio.isMungBgmEnabled() && mungActive) {
+  if (mungActive && !CloudAudio.isMungBgmEnabled()) {
     CloudAudio.startMungBgm();
   }
   syncMungBgmButton();
@@ -588,6 +581,11 @@ shopListEl.addEventListener("click", (event) => {
 window.addEventListener("beforeunload", saveGame);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && mungActive) exitMungMode();
+  if (!mungActive) return;
+  if (event.target.matches("input, textarea")) return;
+  if (event.key === "v" || event.key === "V" || event.key === "ㄷ") {
+    if (window.MungPlay) MungPlay.setActivity("listen");
+  }
 });
 
 loadGame();

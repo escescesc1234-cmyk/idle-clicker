@@ -5,7 +5,7 @@ const CloudAudio = (() => {
   let bgmEnabled = false;
   let mungBgmEnabled = false;
   let mungBgmVolume = 0.7;
-  const MUNG_BGM_MAX_VOLUME = 0.12;
+  const MUNG_BGM_MAX_VOLUME = 0.28;
   let sfxEnabled = true;
   let mainBgmWasOn = false;
 
@@ -193,13 +193,13 @@ const CloudAudio = (() => {
   }
 
   function applyMungMasterVolume() {
-    if (!mungBgmNodes?.master) return;
+    if (!mungBgmNodes?.master || !mungBgmEnabled) return;
     const audio = getContext();
     const now = audio.currentTime;
-    const target = mungBgmEnabled ? getMungMasterVolume() : 0.0001;
+    const target = getMungMasterVolume();
     mungBgmNodes.master.gain.cancelScheduledValues(now);
     mungBgmNodes.master.gain.setValueAtTime(mungBgmNodes.master.gain.value, now);
-    mungBgmNodes.master.gain.linearRampToValueAtTime(Math.max(target, 0.0001), now + 0.15);
+    mungBgmNodes.master.gain.linearRampToValueAtTime(target, now + 0.12);
   }
 
   function setMungBgmVolume(level) {

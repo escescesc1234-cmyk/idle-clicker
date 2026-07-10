@@ -22,6 +22,7 @@ const MungPlay = (() => {
   const myBubbleCountEl = document.getElementById("my-bubble-count");
 
   const hints = {
+    listen: "배경과 소리만 감상해요. V 키로도 전환할 수 있어요",
     cloud: "천천히 눌러도 괜찮아요",
     ripple: "화면 아무 곳이나 눌러 물결을 만들어요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
@@ -62,17 +63,21 @@ const MungPlay = (() => {
       btn.classList.toggle("active", btn.dataset.activity === next);
     });
 
+    const isListen = next === "listen";
     const isCloud = next === "cloud";
     const isDraw = next === "draw";
     const isBreath = next === "breath";
     const isBubble = next === "bubble";
 
+    overlay.classList.toggle("listen-mode", isListen);
     center.classList.toggle("hidden", !isCloud);
     cloudBtn.classList.toggle("hidden", !isCloud);
     canvas.classList.toggle("active", isDraw);
     breathCircle.classList.toggle("hidden", !isBreath);
     hint.textContent = hints[next];
     showBubbleStats(isBubble);
+
+    if (isListen) stopBubbles(false);
 
     if (isDraw) {
       resizeCanvas();
@@ -194,6 +199,7 @@ const MungPlay = (() => {
 
   function stop() {
     active = false;
+    overlay.classList.remove("listen-mode");
     stopBubbles();
     showBubbleStats(false);
     ripplesEl.innerHTML = "";
