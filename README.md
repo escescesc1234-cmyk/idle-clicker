@@ -4,7 +4,10 @@
 
 ## 플레이
 
-GitHub Pages: 배포 후 이 README 상단에 URL이 표시됩니다.
+**온라인:** https://escescesc1234-cmyk.github.io/idle-clicker/  
+(저장소 생성 및 Pages 배포 후 활성화됩니다)
+
+배포 방법은 [DEPLOY.md](DEPLOY.md) 참고.
 
 ## 로컬 실행
 
