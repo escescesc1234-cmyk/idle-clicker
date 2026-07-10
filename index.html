@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>구름 멍때리기</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="top-bar">
+      <div class="brand">
+        <h1>구름 멍때리기</h1>
+        <p class="tagline">아무 생각 없이 구름을 모아보세요</p>
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-block">
+          <span id="cloud-count" class="count">0</span>
+          <span class="label">구름</span>
+        </div>
+        <div class="stat-block secondary">
+          <span id="per-second">0</span>
+          <span class="label">/ 초</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button id="room-btn" class="room-btn" type="button">👥 같이 멍</button>
+        <button id="bgm-toggle" class="icon-btn" type="button" title="배경음 켜기/끄기" aria-pressed="false">🎵</button>
+        <button id="sfx-toggle" class="icon-btn active" type="button" title="효과음 켜기/끄기" aria-pressed="true">☁️</button>
+        <button id="mung-enter" class="mung-btn" type="button">멍 때리기</button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="play-panel">
+        <button id="cloud-btn" class="cloud-btn" type="button" aria-label="구름 클릭">
+          <span class="cloud-emoji" aria-hidden="true">☁️</span>
+        </button>
+        <p class="hint">구름을 누르거나, 오른쪽에서 업그레이드를 사보세요</p>
+      </section>
+
+      <section class="shop-panel">
+        <div class="shop-header">
+          <h2>상점</h2>
+          <div class="shop-tabs" role="tablist">
+            <button class="shop-tab active" type="button" data-tab="click" role="tab">클릭</button>
+            <button class="shop-tab" type="button" data-tab="auto" role="tab">자동</button>
+            <button class="shop-tab" type="button" data-tab="mung" role="tab">멍</button>
+          </div>
+        </div>
+        <div id="shop-list" class="shop-list"></div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <button id="reset-btn" class="text-btn" type="button">저장 초기화</button>
+      <span class="save-hint">자동 저장됨 · 링크로 친구 초대 가능</span>
+    </footer>
+  </div>
+
+  <div id="room-modal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <h2>같이 멍하기</h2>
+      <p class="modal-desc">방을 만들고 링크를 내면 친구도 같은 방에서 멍할 수 있어요.</p>
+
+      <label class="field-label" for="player-name">닉네임</label>
+      <input id="player-name" class="text-input" type="text" maxlength="12" placeholder="멍멍이" />
+
+      <div class="room-actions">
+        <button id="create-room" class="primary-btn" type="button">방 만들기</button>
+        <div class="join-row">
+          <input id="room-code-input" class="text-input code-input" type="text" maxlength="6" placeholder="방 코드" />
+          <button id="join-room" class="primary-btn" type="button">참가</button>
+        </div>
+      </div>
+
+      <div id="room-info" class="room-info hidden">
+        <p>방 코드: <strong id="room-code-display"></strong></p>
+        <p id="host-notice" class="host-notice hidden">방장은 이 창을 켜 둔 채로 기다려주세요.</p>
+        <div id="share-warning" class="share-warning hidden"></div>
+        <div class="share-actions">
+          <button id="copy-room-code" class="ghost-btn-dark" type="button">방 코드만 복사</button>
+          <button id="copy-room-link" class="ghost-btn-dark" type="button">초대 링크 복사</button>
+        </div>
+        <p id="lan-link-hint" class="lan-link-hint"></p>
+        <ul id="players-list" class="players-list"></ul>
+      </div>
+
+      <p id="room-status" class="room-status"></p>
+      <button id="room-close" class="text-btn" type="button">닫기</button>
+    </div>
+  </div>
+
+  <div id="mung-overlay" class="mung-overlay hidden" aria-hidden="true">
+    <div id="mung-scene" class="mung-scene"></div>
+    <div class="mung-particles" id="mung-particles"></div>
+    <div id="mung-ripples" class="mung-ripples"></div>
+    <div id="mung-bubbles" class="mung-bubbles"></div>
+    <canvas id="mung-draw-canvas" class="mung-draw-canvas"></canvas>
+
+    <div id="breath-circle" class="breath-circle hidden" aria-hidden="true"></div>
+
+    <aside id="mung-players" class="mung-players"></aside>
+
+    <aside id="mung-chat" class="mung-side-panel mung-chat hidden collapsed">
+      <button id="mung-chat-toggle" class="mung-panel-toggle" type="button">💬 멍 채팅</button>
+      <div id="mung-chat-body" class="mung-panel-body">
+        <div id="mung-chat-messages" class="mung-chat-messages"></div>
+        <form id="mung-chat-form" class="mung-chat-form">
+          <input id="mung-chat-input" class="mung-chat-input" type="text" maxlength="120" placeholder="멍하며 말하기..." autocomplete="off" />
+          <button type="submit" class="mung-chat-send">전송</button>
+        </form>
+      </div>
+    </aside>
+
+    <aside id="bubble-stats" class="mung-side-panel bubble-stats hidden collapsed">
+      <button id="bubble-stats-toggle" class="mung-panel-toggle" type="button">
+        🫧 거품 <span id="bubble-stats-badge" class="panel-badge">0</span>
+      </button>
+      <div id="bubble-stats-body" class="mung-panel-body">
+        <p class="bubble-stats-title">이번 멍 거품 기록</p>
+        <div class="bubble-stat-row">
+          <span>내가 터뜨림</span>
+          <strong id="my-bubble-count">0</strong>
+        </div>
+        <div id="room-bubble-stats" class="room-bubble-stats"></div>
+      </div>
+    </aside>
+
+    <div class="mung-ui">
+      <div class="mung-top">
+        <span id="mung-scene-name" class="mung-scene-name">멍 공간</span>
+        <button id="mung-bgm-toggle" class="ghost-btn active" type="button" title="멍 배경음">🎵</button>
+        <button id="mung-next-scene" class="ghost-btn" type="button">다른 멍</button>
+        <button id="mung-close" class="ghost-btn" type="button">나가기</button>
+      </div>
+
+      <p id="mung-message" class="mung-message"></p>
+
+      <div class="mung-activities" role="tablist">
+        <button class="mung-activity active" type="button" data-activity="cloud">☁️ 구름</button>
+        <button class="mung-activity" type="button" data-activity="ripple">💧 물결</button>
+        <button class="mung-activity" type="button" data-activity="bubble">🫧 거품</button>
+        <button class="mung-activity" type="button" data-activity="draw">✏️ 낙서</button>
+        <button class="mung-activity" type="button" data-activity="breath">🌬️ 호흡</button>
+      </div>
+
+      <div class="mung-center" id="mung-center">
+        <button id="mung-cloud-btn" class="mung-cloud-btn" type="button" aria-label="멍하며 구름 클릭">
+          <span class="cloud-emoji" aria-hidden="true">☁️</span>
+        </button>
+        <p id="mung-hint" class="mung-hint">천천히 눌러도 괜찮아요</p>
+      </div>
+
+      <div class="mung-bottom">
+        <span id="mung-cloud-display" class="mung-cloud-display">0 구름</span>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/mung-play.js"></script>
+  <script src="js/multiplayer.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
