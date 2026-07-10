@@ -16,10 +16,22 @@ git push -u origin main
 
 브라우저 로그인 창이 뜨면 GitHub 계정으로 승인하세요.
 
-## 3. GitHub Pages 켜기 (한 번만)
-1. 저장소 → **Settings** → **Pages**
-2. **Build and deployment** → Source: **GitHub Actions**
-3. **Actions** 탭에서 `Deploy GitHub Pages` 워크플로가 완료될 때까지 대기
+## 3. GitHub Pages 켜기 (한 번만) — Actions 없이 가능
+
+1. 저장소 → **Settings** (설정)
+2. 왼쪽 메뉴에서 **Pages** 클릭  
+   직접 링크: https://github.com/escescesc1234-cmyk/idle-clicker/settings/pages
+3. **Build and deployment** → **Source** 를 **Deploy from a branch** 로 선택
+4. **Branch** → `main` / `/(root)` 선택 → **Save**
+
+1~2분 후 사이트가 열립니다.
+
+> Actions 탭이 안 보여도 이 방법이면 됩니다.
+
+### (선택) Actions로 배포하고 싶다면
+- Actions 탭: https://github.com/escescesc1234-cmyk/idle-clicker/actions
+- Settings → Actions → General 에서 Actions 사용이 꺼져 있으면 켜기
+- Pages Source를 **GitHub Actions** 로 선택
 
 ## 플레이 주소
 https://escescesc1234-cmyk.github.io/idle-clicker/
