@@ -13,7 +13,7 @@ const MungPlay = (() => {
   let keys = { up: false, down: false, left: false, right: false };
   let stickVec = { x: 0, y: 0 };
   let stickActive = false;
-  let player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0 };
+  let player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0, angle: 0 };
   let cam = { x: 0, y: 0 };
   let nearMachine = false;
   let nearPond = false;
@@ -44,9 +44,10 @@ const MungPlay = (() => {
   const PLAYER_ACCEL = 780;
   const PLAYER_FRICTION = 920;
   const MAX_HELD_FOOD = 12;
-  const MACHINE_POS = { x: 1295, y: 770 };
+  const MACHINE_POS = { x: 1285, y: 735 };
   const POND_RECT = { x: 398, y: 318, w: 724, h: 344 };
-  const WALK_BOUNDS = { left: 120, right: 1480, top: 250, bottom: 1020 };
+  const SHOP_RECT = { x: 1225, y: 760, w: 170, h: 120 };
+  const WALK_BOUNDS = { left: 220, right: 1480, top: 280, bottom: 1000 };
   const FISH_KINDS = ["koi-orange", "koi-red", "koi-white", "koi-orange", "koi-red"];
 
   const overlay = document.getElementById("mung-overlay");
@@ -80,7 +81,7 @@ const MungPlay = (() => {
   const hints = {
     listen: "배경과 소리만 감상해요. 「감상 끝내기」로 나와요",
     cloud: "천천히 눌러도 괜찮아요",
-    ripple: "드래그로 카메라 회전 · 자판기에서 먹이를 담아 잉어에게 주세요",
+    ripple: "드래그로 시점 회전 · 매점 자판기에서 먹이를 담아 연못 가에 주세요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
     draw: "손가락이나 마우스로 천천히 그려보세요",
     breath: "원이 커질 때 들이쉬고, 작아질 때 내쉬어요",
@@ -269,25 +270,14 @@ const MungPlay = (() => {
     const distMachine = Math.hypot(player.x - MACHINE_POS.x, player.y - MACHINE_POS.y);
     nearMachine = distMachine < 110;
 
-    const clampX = Math.max(POND_RECT.x, Math.min(POND_RECT.x + POND_RECT.w, player.x));
-    const clampY = Math.max(POND_RECT.y, Math.min(POND_RECT.y + POND_RECT.h, player.y));
-    let edgeDist;
-    if (
-      player.x >= POND_RECT.x
-      && player.x <= POND_RECT.x + POND_RECT.w
-      && player.y >= POND_RECT.y
-      && player.y <= POND_RECT.y + POND_RECT.h
-    ) {
-      edgeDist = Math.min(
-        player.x - POND_RECT.x,
-        POND_RECT.x + POND_RECT.w - player.x,
-        player.y - POND_RECT.y,
-        POND_RECT.y + POND_RECT.h - player.y,
-      );
-    } else {
-      edgeDist = Math.hypot(player.x - clampX, player.y - clampY);
-    }
-    nearPond = edgeDist < 58;
+    const cx = POND_RECT.x + POND_RECT.w / 2;
+    const cy = POND_RECT.y + POND_RECT.h / 2;
+    const rx = POND_RECT.w * 0.5;
+    const ry = POND_RECT.h * 0.5;
+    const nx = (player.x - cx) / rx;
+    const ny = (player.y - cy) / ry;
+    const ellipse = Math.sqrt(nx * nx + ny * ny);
+    nearPond = ellipse > 0.92 && ellipse < 1.22;
 
     feedMachine.classList.toggle("nearby", nearMachine);
 
@@ -312,7 +302,7 @@ const MungPlay = (() => {
       text = `먹이 ${heldFood}개 · 연못 가로 가서 주세요`;
       actionLabel = "주기";
     } else {
-      text = "오른쪽 자판기로 가서 먹이를 담으세요";
+      text = "매점 자판기로 가서 먹이를 담으세요";
       actionLabel = "담기";
     }
 
@@ -426,23 +416,52 @@ const MungPlay = (() => {
     pondWorld.style.transform = `translate(${-cam.x}px, ${-cam.y + parallax * 0.15}px)`;
   }
 
+  function isInPondWater(x, y) {
+    const cx = POND_RECT.x + POND_RECT.w / 2;
+    const cy = POND_RECT.y + POND_RECT.h / 2;
+    const rx = POND_RECT.w * 0.48;
+    const ry = POND_RECT.h * 0.48;
+    const nx = (x - cx) / rx;
+    const ny = (y - cy) / ry;
+    return nx * nx + ny * ny < 1;
+  }
+
+  function isInShop(x, y) {
+    return x > SHOP_RECT.x
+      && x < SHOP_RECT.x + SHOP_RECT.w
+      && y > SHOP_RECT.y
+      && y < SHOP_RECT.y + SHOP_RECT.h;
+  }
+
   function isWalkBlocked(x, y) {
-    const deep = x > POND_RECT.x + 78 && x < POND_RECT.x + POND_RECT.w - 78
-      && y > POND_RECT.y + 78 && y < POND_RECT.y + POND_RECT.h - 78;
-    return deep;
+    return isInPondWater(x, y) || isInShop(x, y);
   }
 
   function softPushFromWater(x, y) {
-    if (!isWalkBlocked(x, y)) return { x, y };
-    const cx = POND_RECT.x + POND_RECT.w / 2;
-    const cy = POND_RECT.y + POND_RECT.h / 2;
-    const dx = x - cx;
-    const dy = y - cy;
-    const len = Math.hypot(dx, dy) || 1;
-    return {
-      x: cx + (dx / len) * (POND_RECT.w * 0.42),
-      y: cy + (dy / len) * (POND_RECT.h * 0.42),
-    };
+    if (isInPondWater(x, y)) {
+      const cx = POND_RECT.x + POND_RECT.w / 2;
+      const cy = POND_RECT.y + POND_RECT.h / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const len = Math.hypot(dx, dy) || 1;
+      return {
+        x: cx + (dx / len) * (POND_RECT.w * 0.5),
+        y: cy + (dy / len) * (POND_RECT.h * 0.5),
+      };
+    }
+    if (isInShop(x, y)) {
+      const cx = SHOP_RECT.x + SHOP_RECT.w / 2;
+      const cy = SHOP_RECT.y + SHOP_RECT.h / 2;
+      const dx = x - cx;
+      const dy = y - cy;
+      const absX = Math.abs(dx) / (SHOP_RECT.w * 0.5);
+      const absY = Math.abs(dy) / (SHOP_RECT.h * 0.5);
+      if (absX > absY) {
+        return { x: cx + Math.sign(dx || 1) * (SHOP_RECT.w * 0.5 + 8), y };
+      }
+      return { x, y: cy + Math.sign(dy || 1) * (SHOP_RECT.h * 0.5 + 8) };
+    }
+    return { x, y };
   }
 
   function startPond() {
@@ -453,9 +472,9 @@ const MungPlay = (() => {
     pondLayer.setAttribute("aria-hidden", "false");
 
     const sceneName = document.getElementById("mung-scene-name");
-    if (sceneName) sceneName.textContent = "부산 충렬사 · 의중지";
+    if (sceneName) sceneName.textContent = "부산 충렬사 · 의중지~매점";
 
-    player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0 };
+    player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0, angle: 0 };
     cam = { x: player.x - window.innerWidth / 2, y: player.y - window.innerHeight / 2 };
     heldFood = 0;
     footstepTimer = 0;
@@ -616,13 +635,26 @@ const MungPlay = (() => {
     mx += stickVec.x;
     my += stickVec.y;
 
+    if (use3D && window.Pond3D?.getOrbitYaw) {
+      const yaw = Pond3D.getOrbitYaw();
+      const sin = Math.sin(yaw);
+      const cos = Math.cos(yaw);
+      const forward = -my;
+      const right = mx;
+      mx = (-sin) * forward + cos * right;
+      my = (-cos) * forward + (-sin) * right;
+    }
+
     const mag = Math.hypot(mx, my);
     if (mag > 0.08) {
       const nx = mx / mag;
       const ny = my / mag;
       player.vx += nx * PLAYER_ACCEL * dt;
       player.vy += ny * PLAYER_ACCEL * dt;
-      if (Math.abs(nx) > 0.2) player.facing = nx < 0 ? -1 : 1;
+      if (Math.abs(nx) > 0.15 || Math.abs(ny) > 0.15) {
+        player.facing = nx < 0 ? -1 : 1;
+        player.angle = Math.atan2(nx, ny);
+      }
     } else {
       const damp = Math.exp(-PLAYER_FRICTION * dt / PLAYER_SPEED);
       player.vx *= damp;
@@ -640,15 +672,20 @@ const MungPlay = (() => {
     nextX = Math.max(WALK_BOUNDS.left, Math.min(WALK_BOUNDS.right, nextX));
     nextY = Math.max(WALK_BOUNDS.top, Math.min(WALK_BOUNDS.bottom, nextY));
 
-    if (isWalkBlocked(nextX, player.y)) {
-      const pushed = softPushFromWater(nextX, player.y);
-      nextX = pushed.x;
-      player.vx *= 0.35;
-    }
-    if (isWalkBlocked(player.x, nextY)) {
-      const pushed = softPushFromWater(player.x, nextY);
-      nextY = pushed.y;
-      player.vy *= 0.35;
+    if (isWalkBlocked(nextX, nextY)) {
+      if (!isWalkBlocked(nextX, player.y)) {
+        nextY = player.y;
+        player.vy *= 0.2;
+      } else if (!isWalkBlocked(player.x, nextY)) {
+        nextX = player.x;
+        player.vx *= 0.2;
+      } else {
+        const pushed = softPushFromWater(nextX, nextY);
+        nextX = pushed.x;
+        nextY = pushed.y;
+        player.vx *= 0.25;
+        player.vy *= 0.25;
+      }
     }
 
     player.x = nextX;

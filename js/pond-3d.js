@@ -24,6 +24,7 @@ const Pond3D = (() => {
   let orbitPitch = 0.38;
   let orbitDragging = false;
   let orbitLast = { x: 0, y: 0 };
+  let shopMesh = null;
 
   function to3(x, y, height = 0) {
     return new THREE.Vector3((x - ORIGIN_X) * SCALE, height, (y - ORIGIN_Z) * SCALE);
@@ -191,10 +192,74 @@ const Pond3D = (() => {
     return g;
   }
 
+  function createHanokShop() {
+    const g = new THREE.Group();
+    const wood = makeMat(0x8a6238, { roughness: 0.9 });
+    const plaster = makeMat(0xf0e6d4, { roughness: 0.95 });
+    const tile = makeMat(0x4a3a32, { roughness: 0.75, flat: true });
+    const accent = makeMat(0x6b2e28, { roughness: 0.8 });
+
+    const floor = addShadow(new THREE.Mesh(new THREE.BoxGeometry(5.2, 0.18, 3.6), wood));
+    floor.position.y = 0.12;
+    g.add(floor);
+
+    const base = addShadow(new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.7, 3.1), plaster));
+    base.position.y = 1.05;
+    g.add(base);
+
+    const counter = addShadow(new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.7, 0.55), wood));
+    counter.position.set(0, 0.75, 1.55);
+    g.add(counter);
+
+    const awning = addShadow(new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.08, 1.2), accent));
+    awning.position.set(0, 1.55, 1.85);
+    awning.rotation.x = -0.18;
+    g.add(awning);
+
+    const pillarGeo = new THREE.BoxGeometry(0.22, 2.1, 0.22);
+    [[-2.1, 1.15, 1.35], [2.1, 1.15, 1.35], [-2.1, 1.15, -1.2], [2.1, 1.15, -1.2]].forEach(([x, y, z]) => {
+      const p = addShadow(new THREE.Mesh(pillarGeo, wood));
+      p.position.set(x, y, z);
+      g.add(p);
+    });
+
+    const roof = addShadow(new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.35, 4.2), tile));
+    roof.position.y = 2.35;
+    g.add(roof);
+    const roofRidge = addShadow(new THREE.Mesh(new THREE.BoxGeometry(5.8, 0.22, 0.35), tile));
+    roofRidge.position.y = 2.6;
+    g.add(roofRidge);
+    const eavesF = addShadow(new THREE.Mesh(new THREE.BoxGeometry(5.7, 0.12, 0.55), tile));
+    eavesF.position.set(0, 2.2, 2.15);
+    eavesF.rotation.x = 0.25;
+    g.add(eavesF);
+    const eavesB = eavesF.clone();
+    eavesB.position.z = -2.15;
+    eavesB.rotation.x = -0.25;
+    g.add(eavesB);
+
+    const sign = addShadow(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.55, 0.08), makeMat(0xe8dcc8)));
+    sign.position.set(0, 1.95, 1.7);
+    g.add(sign);
+
+    const stool = addShadow(new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.45, 8), wood));
+    stool.position.set(-1.6, 0.35, 2.2);
+    g.add(stool);
+    const stool2 = stool.clone();
+    stool2.position.x = 1.6;
+    g.add(stool2);
+
+    const crate = addShadow(new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.55, 0.55), makeMat(0xb8894a)));
+    crate.position.set(2.6, 0.4, 0.8);
+    g.add(crate);
+
+    return g;
+  }
+
   function buildScene() {
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0xb9d7e8);
-    scene.fog = new THREE.Fog(0xb9d7e8, 28, 70);
+    scene.fog = new THREE.Fog(0xb9d7e8, 26, 58);
 
     camera = new THREE.PerspectiveCamera(50, 1, 0.1, 120);
     camera.position.copy(camPos);
@@ -214,7 +279,7 @@ const Pond3D = (() => {
     scene.add(sun);
 
     const ground = addShadow(new THREE.Mesh(
-      new THREE.CircleGeometry(28, 48),
+      new THREE.CircleGeometry(24, 48),
       makeMat(0x8fb392),
     ));
     ground.rotation.x = -Math.PI / 2;
@@ -222,13 +287,31 @@ const Pond3D = (() => {
     ground.castShadow = false;
     scene.add(ground);
 
-    const path = addShadow(new THREE.Mesh(
-      new THREE.BoxGeometry(22, 0.08, 4.2),
+    const pathMain = addShadow(new THREE.Mesh(
+      new THREE.BoxGeometry(10, 0.08, 4.4),
       makeMat(0xc4b396, { roughness: 0.95 }),
     ));
-    path.position.set(0, 0.04, 8.5);
-    path.receiveShadow = true;
-    scene.add(path);
+    pathMain.position.set(0, 0.04, 8.2);
+    pathMain.receiveShadow = true;
+    scene.add(pathMain);
+
+    const pathToShop = addShadow(new THREE.Mesh(
+      new THREE.BoxGeometry(14, 0.08, 3.2),
+      makeMat(0xc4b396, { roughness: 0.95 }),
+    ));
+    pathToShop.position.set(10, 0.04, 8.6);
+    pathToShop.rotation.y = -0.18;
+    pathToShop.receiveShadow = true;
+    scene.add(pathToShop);
+
+    const plaza = addShadow(new THREE.Mesh(
+      new THREE.CircleGeometry(4.2, 28),
+      makeMat(0xcbb89a, { roughness: 0.95 }),
+    ));
+    plaza.rotation.x = -Math.PI / 2;
+    plaza.position.set(20.2, 0.05, 10.2);
+    plaza.receiveShadow = true;
+    scene.add(plaza);
 
     const rim = addShadow(new THREE.Mesh(
       new THREE.TorusGeometry(7.2, 0.55, 10, 40),
@@ -258,24 +341,10 @@ const Pond3D = (() => {
     waterMesh.scale.set(1.35, 1, 0.85);
     scene.add(waterMesh);
 
-    const gate = new THREE.Group();
-    const pillarL = addShadow(new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.2, 0.35), makeMat(0xd9c4a0)));
-    const pillarR = pillarL.clone();
-    pillarL.position.set(-1.4, 1.1, -14);
-    pillarR.position.set(1.4, 1.1, -14);
-    const roof = addShadow(new THREE.Mesh(
-      new THREE.ConeGeometry(2.4, 1.1, 4),
-      makeMat(0x5a2f2a, { flat: true }),
-    ));
-    roof.position.set(0, 2.5, -14);
-    roof.rotation.y = Math.PI / 4;
-    gate.add(pillarL, pillarR, roof);
-    scene.add(gate);
-
     [
-      [-14, -6, "pine"], [-12, -9, "plum"], [-15, 2, "pine"],
-      [13, -7, "plum"], [15, -3, "pine"], [12, 4, "plum"],
-      [-10, 10, "pine"], [10, 11, "plum"],
+      [-12, -5, "pine"], [-10, -8, "plum"], [-13, 3, "pine"],
+      [8, -6, "plum"], [11, -2, "pine"], [6, 5, "plum"],
+      [-8, 11, "pine"], [14, 14, "plum"], [22, 5, "pine"], [24, 12, "plum"],
     ].forEach(([x, z, kind]) => scene.add(createTree(x, z, kind)));
 
     const bench = addShadow(new THREE.Mesh(
@@ -289,27 +358,37 @@ const Pond3D = (() => {
       new THREE.CylinderGeometry(0.06, 0.06, 1.2, 6),
       makeMat(0x5a4030, { flat: true }),
     ));
-    signPost.position.set(-8.5, 0.6, -8);
+    signPost.position.set(-8.5, 0.6, -6);
     const signBoard = addShadow(new THREE.Mesh(
       new THREE.BoxGeometry(1.4, 0.7, 0.1),
       makeMat(0xe8dcc8),
     ));
-    signBoard.position.set(-8.5, 1.35, -8);
+    signBoard.position.set(-8.5, 1.35, -6);
     scene.add(signPost, signBoard);
+
+    shopMesh = createHanokShop();
+    shopMesh.position.set(20.2, 0, 10.8);
+    shopMesh.rotation.y = -0.55;
+    scene.add(shopMesh);
 
     machineMesh = new THREE.Group();
     const cabinet = addShadow(new THREE.Mesh(
-      new THREE.BoxGeometry(1.1, 1.8, 0.8),
+      new THREE.BoxGeometry(1.0, 1.7, 0.75),
       makeMat(0x3a4c60),
     ));
-    cabinet.position.y = 0.9;
+    cabinet.position.y = 0.85;
     const screen = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.35, 0.05),
+      new THREE.BoxGeometry(0.65, 0.32, 0.05),
       makeMat(0x4ec4b0, { roughness: 0.3, metalness: 0.2 }),
     );
-    screen.position.set(0, 1.25, 0.42);
-    machineMesh.add(cabinet, screen);
-    machineMesh.position.copy(to3(1295, 770, 0));
+    screen.position.set(0, 1.2, 0.4);
+    const slot = new THREE.Mesh(
+      new THREE.BoxGeometry(0.35, 0.08, 0.08),
+      makeMat(0x222830),
+    );
+    slot.position.set(0, 0.7, 0.4);
+    machineMesh.add(cabinet, screen, slot);
+    machineMesh.position.copy(to3(1285, 735, 0));
     scene.add(machineMesh);
 
     playerMesh = createPlayerMesh(0x3d6fa0);
@@ -455,7 +534,10 @@ const Pond3D = (() => {
     const { player, fish, foods, remotes, nearMachine } = state;
     const p = to3(player.x, player.y, 0);
     playerMesh.position.lerp(p, 0.4);
-    playerMesh.rotation.y = player.facing < 0 ? Math.PI / 2 : -Math.PI / 2;
+    const faceAngle = Number.isFinite(player.angle)
+      ? player.angle
+      : (player.facing < 0 ? Math.PI / 2 : -Math.PI / 2);
+    playerMesh.rotation.y = faceAngle;
     playerMesh.position.y = Math.abs(Math.sin(performance.now() * 0.012)) * (state.walking ? 0.08 : 0);
 
     if (machineMesh) machineMesh.scale.setScalar(nearMachine ? 1.06 : 1);
@@ -514,6 +596,10 @@ const Pond3D = (() => {
     remoteMeshes.clear();
   }
 
+  function getOrbitYaw() {
+    return orbitYaw;
+  }
+
   function isReady() {
     return !!window.THREE;
   }
@@ -522,7 +608,7 @@ const Pond3D = (() => {
     if (running) resize();
   });
 
-  return { start, stop, sync, resize, isReady };
+  return { start, stop, sync, resize, isReady, getOrbitYaw };
 })();
 
 window.Pond3D = Pond3D;

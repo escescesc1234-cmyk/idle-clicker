@@ -1036,6 +1036,65 @@ body.mung-open {
   z-index: 3;
 }
 
+.chung-shop {
+  position: absolute;
+  left: 1220px;
+  top: 740px;
+  width: 190px;
+  height: 140px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.chung-shop-body {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 8px;
+  height: 78px;
+  border-radius: 6px 6px 4px 4px;
+  background: linear-gradient(180deg, #f2e8d6, #dcc9a8);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22);
+  border: 2px solid rgba(120, 90, 55, 0.35);
+}
+
+.chung-shop-roof {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18px;
+  height: 42px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #5a4034, #3d2a22);
+  clip-path: polygon(4% 100%, 12% 18%, 88% 18%, 96% 100%);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.chung-shop-sign {
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 4px;
+  background: #efe4cf;
+  color: #5a3a28;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(120, 90, 55, 0.35);
+}
+
+.chung-shop-counter {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 10px;
+  height: 18px;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #9a6a42, #6f4a2e);
+}
+
 .bench-seat {
   position: absolute;
   inset: 0 0 10px 0;
@@ -1361,8 +1420,8 @@ body.mung-open {
 
 .feed-machine {
   position: absolute;
-  left: 1210px;
-  top: 700px;
+  left: 1200px;
+  top: 665px;
   width: 168px;
   display: flex;
   align-items: center;
