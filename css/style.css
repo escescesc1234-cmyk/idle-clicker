@@ -611,7 +611,6 @@ body.mung-open {
 
 .mung-overlay.listen-mode .mung-activities,
 .mung-overlay.listen-mode .mung-center,
-.mung-overlay.listen-mode .mung-bottom,
 .mung-overlay.listen-mode .bubble-stats,
 .mung-overlay.listen-mode .mung-players {
   display: none !important;
@@ -619,19 +618,32 @@ body.mung-open {
 
 .mung-exit-listen {
   display: none;
-  margin-left: 0;
+  align-self: center;
+  margin: 12px auto 0;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 14px;
+  padding: 12px 22px;
   background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  pointer-events: auto;
+  z-index: 5;
 }
 
 .mung-overlay.listen-mode .mung-exit-listen {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  margin-top: auto;
+  margin-bottom: max(8px, env(safe-area-inset-bottom));
 }
 
 .mung-overlay.listen-mode .mung-message {
   margin-top: auto;
-  margin-bottom: auto;
+  margin-bottom: 8px;
   font-size: 1.05rem;
   opacity: 0.85;
 }
@@ -639,7 +651,11 @@ body.mung-open {
 .mung-overlay.listen-mode .mung-hint {
   display: block;
   text-align: center;
-  margin: 16px auto 0;
+  margin: 8px auto 0;
+}
+
+.mung-overlay.listen-mode .mung-bottom {
+  display: none !important;
 }
 
 .mung-particles {
@@ -655,6 +671,134 @@ body.mung-open {
   inset: 0;
   pointer-events: none;
   z-index: 1;
+}
+
+.pond-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.pond-layer.hidden {
+  display: none;
+}
+
+.mung-overlay.pond-mode .mung-bg-img {
+  opacity: 0;
+}
+
+.mung-overlay.pond-mode .mung-scene {
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(90, 180, 170, 0.35) 0%, transparent 55%),
+    linear-gradient(180deg, #8ec8e8 0%, #5fa8c8 28%, #3d8f9e 55%, #2f6f78 78%, #24585e 100%);
+}
+
+.pond-water {
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 24%;
+  bottom: 14%;
+  border-radius: 48% 48% 42% 42% / 18% 18% 28% 28%;
+  background:
+    radial-gradient(ellipse at 30% 30%, rgba(180, 235, 230, 0.35), transparent 45%),
+    linear-gradient(180deg, rgba(120, 200, 190, 0.55) 0%, rgba(40, 110, 120, 0.75) 100%);
+  box-shadow:
+    inset 0 10px 30px rgba(255, 255, 255, 0.18),
+    inset 0 -20px 40px rgba(10, 40, 50, 0.35),
+    0 12px 40px rgba(20, 60, 70, 0.25);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.pond-water::before {
+  content: "";
+  position: absolute;
+  inset: 12% 10% auto;
+  height: 18%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent);
+  filter: blur(2px);
+}
+
+.pond-fish-layer,
+.pond-food-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.pond-fish {
+  position: absolute;
+  left: 0;
+  top: 0;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  will-change: transform, left, top;
+  user-select: none;
+  pointer-events: none;
+}
+
+.pond-pellet {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #f5d76e, #c48a2a);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.feed-machine {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  align-self: flex-end;
+  margin: 10px 0 0 auto;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  padding: 10px 14px;
+  background: linear-gradient(160deg, rgba(40, 70, 90, 0.72), rgba(20, 45, 60, 0.78));
+  color: #fff;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  pointer-events: auto;
+  z-index: 5;
+  text-align: left;
+}
+
+.feed-machine:not(.hidden) {
+  display: inline-flex;
+}
+
+.feed-machine.hidden {
+  display: none !important;
+}
+
+.feed-machine:active {
+  transform: scale(0.97);
+}
+
+.feed-machine-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.feed-machine-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feed-machine-text strong {
+  font-size: 0.88rem;
+}
+
+.feed-machine-text small {
+  font-size: 0.72rem;
+  opacity: 0.8;
 }
 
 .mung-bubbles {
@@ -1063,7 +1207,9 @@ body.mung-open {
 .mung-hint,
 .mung-bgm-control,
 .mung-volume-wrap,
-.mung-volume-slider {
+.mung-volume-slider,
+.feed-machine,
+.mung-exit-listen {
   pointer-events: auto;
 }
 
@@ -1358,8 +1504,7 @@ body.mung-open {
     width: min(120px, 28vw);
   }
 
-  .ghost-btn,
-  .mung-exit-listen {
+  .ghost-btn {
     margin-left: 0;
     min-height: 40px;
     padding: 8px 12px;
@@ -1370,6 +1515,39 @@ body.mung-open {
   .mung-top #mung-next-scene,
   .mung-top .mung-bgm-control + .ghost-btn {
     margin-left: 0;
+  }
+
+  .mung-exit-listen {
+    width: min(280px, calc(100% - 16px));
+    min-height: 48px;
+    margin-top: auto;
+    margin-bottom: max(8px, env(safe-area-inset-bottom));
+    font-size: 1rem;
+  }
+
+  .feed-machine {
+    align-self: stretch;
+    justify-content: center;
+    margin-top: 8px;
+    min-height: 52px;
+  }
+
+  .mung-overlay.listen-mode .mung-top {
+    justify-content: space-between;
+  }
+
+  .mung-overlay.listen-mode .mung-scene-name {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .mung-overlay.listen-mode .mung-bgm-control {
+    flex: 0 1 auto;
+  }
+
+  .mung-overlay.listen-mode #mung-next-scene {
+    display: none;
   }
 
   .mung-message {
@@ -1441,15 +1619,6 @@ body.mung-open {
 
   .mung-chat-messages {
     max-height: 140px;
-  }
-
-  .mung-overlay.listen-mode .mung-top {
-    justify-content: flex-end;
-  }
-
-  .mung-overlay.listen-mode .mung-scene-name {
-    width: auto;
-    margin-right: auto;
   }
 }
 

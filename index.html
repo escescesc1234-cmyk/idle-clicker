@@ -108,6 +108,11 @@
     </div>
     <div class="mung-particles" id="mung-particles"></div>
     <div id="mung-ripples" class="mung-ripples"></div>
+    <div id="pond-layer" class="pond-layer hidden" aria-hidden="true">
+      <div class="pond-water"></div>
+      <div id="pond-fish" class="pond-fish-layer"></div>
+      <div id="pond-food" class="pond-food-layer"></div>
+    </div>
     <div id="mung-bubbles" class="mung-bubbles"></div>
     <canvas id="mung-draw-canvas" class="mung-draw-canvas"></canvas>
 
@@ -150,7 +155,6 @@
             <input id="mung-bgm-volume" class="mung-volume-slider" type="range" min="0" max="100" value="70" aria-label="멍 배경음 볼륨" />
           </label>
         </div>
-        <button id="mung-exit-listen" class="ghost-btn mung-exit-listen" type="button">감상 끝내기</button>
         <button id="mung-next-scene" class="ghost-btn" type="button">다른 멍</button>
         <button id="mung-close" class="ghost-btn" type="button">나가기</button>
       </div>
@@ -160,7 +164,7 @@
       <div class="mung-activities" role="tablist">
         <button class="mung-activity" type="button" data-activity="listen" title="감상 모드">🎧 감상</button>
         <button class="mung-activity active" type="button" data-activity="cloud">☁️ 구름</button>
-        <button class="mung-activity" type="button" data-activity="ripple">💧 물결</button>
+        <button class="mung-activity" type="button" data-activity="ripple">🐟 연못</button>
         <button class="mung-activity" type="button" data-activity="bubble">🫧 거품</button>
         <button class="mung-activity" type="button" data-activity="draw">✏️ 낙서</button>
         <button class="mung-activity" type="button" data-activity="breath">🌬️ 호흡</button>
@@ -172,6 +176,16 @@
         </button>
       </div>
       <p id="mung-hint" class="mung-hint">천천히 눌러도 괜찮아요</p>
+
+      <button id="feed-machine" class="feed-machine hidden" type="button" aria-label="먹이 자판기">
+        <span class="feed-machine-icon" aria-hidden="true">🎰</span>
+        <span class="feed-machine-text">
+          <strong>먹이 자판기</strong>
+          <small>눌러서 물고기 먹이주기</small>
+        </span>
+      </button>
+
+      <button id="mung-exit-listen" class="mung-exit-listen" type="button">감상 끝내기</button>
 
       <div class="mung-bottom">
         <span id="mung-cloud-display" class="mung-cloud-display">0 구름</span>

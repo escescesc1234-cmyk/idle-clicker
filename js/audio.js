@@ -100,6 +100,23 @@ const CloudAudio = (() => {
     osc.stop(now + 0.32);
   }
 
+  function playFeed() {
+    if (!sfxEnabled) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    const osc = audio.createOscillator();
+    osc.type = "square";
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.12);
+    const gain = audio.createGain();
+    gain.gain.setValueAtTime(0.035, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+    osc.connect(gain);
+    gain.connect(audio.destination);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  }
+
   function buildAmbientBgm({ volume, freqs, noiseLevel }) {
     const audio = getContext();
     const now = audio.currentTime;
@@ -275,6 +292,7 @@ const CloudAudio = (() => {
     playCloudPuff,
     playSoftPop,
     playRipple,
+    playFeed,
     startBgm,
     stopBgm,
     startMungBgm,

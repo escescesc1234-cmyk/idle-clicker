@@ -244,7 +244,7 @@ const Multiplayer = (() => {
   }
 
   function activityLabel(a) {
-    const map = { cloud: "구름", ripple: "물결", bubble: "거품", draw: "낙서", breath: "호흡", listen: "감상" };
+    const map = { cloud: "구름", ripple: "연못", bubble: "거품", draw: "낙서", breath: "호흡", listen: "감상" };
     return map[a] || "멍";
   }
 
