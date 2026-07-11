@@ -117,6 +117,113 @@ const CloudAudio = (() => {
     osc.stop(now + 0.15);
   }
 
+  function playFeedCollect() {
+    if (!sfxEnabled) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    [660, 880].forEach((freq, i) => {
+      const osc = audio.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, now + i * 0.05);
+      const gain = audio.createGain();
+      gain.gain.setValueAtTime(0.03, now + i * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.05 + 0.12);
+      osc.connect(gain);
+      gain.connect(audio.destination);
+      osc.start(now + i * 0.05);
+      osc.stop(now + i * 0.05 + 0.13);
+    });
+  }
+
+  function playFootstep() {
+    if (!sfxEnabled) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    const bufferSize = Math.floor(audio.sampleRate * 0.04);
+    const buffer = audio.createBuffer(1, bufferSize, audio.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i += 1) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    const source = audio.createBufferSource();
+    source.buffer = buffer;
+    const filter = audio.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 280 + Math.random() * 80;
+    const gain = audio.createGain();
+    gain.gain.setValueAtTime(0.045, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    source.connect(filter);
+    filter.connect(gain);
+    gain.connect(audio.destination);
+    source.start(now);
+    source.stop(now + 0.05);
+  }
+
+  let pondAmbientNodes = null;
+
+  function startPondAmbient() {
+    if (pondAmbientNodes) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    const master = audio.createGain();
+    master.gain.setValueAtTime(0.0001, now);
+    master.gain.exponentialRampToValueAtTime(0.045, now + 1.8);
+
+    const noiseBuffer = audio.createBuffer(1, audio.sampleRate * 2, audio.sampleRate);
+    const noiseData = noiseBuffer.getChannelData(0);
+    for (let i = 0; i < noiseData.length; i += 1) {
+      noiseData[i] = Math.random() * 2 - 1;
+    }
+    const noise = audio.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
+    const waterFilter = audio.createBiquadFilter();
+    waterFilter.type = "bandpass";
+    waterFilter.frequency.value = 620;
+    waterFilter.Q.value = 0.6;
+    const waterGain = audio.createGain();
+    waterGain.gain.value = 0.55;
+    noise.connect(waterFilter);
+    waterFilter.connect(waterGain);
+    waterGain.connect(master);
+
+    const bird = audio.createOscillator();
+    bird.type = "sine";
+    bird.frequency.setValueAtTime(1800, now);
+    const birdGain = audio.createGain();
+    birdGain.gain.setValueAtTime(0.0001, now);
+    const birdLfo = audio.createOscillator();
+    birdLfo.frequency.value = 0.08;
+    const birdLfoGain = audio.createGain();
+    birdLfoGain.gain.value = 0.012;
+    birdLfo.connect(birdLfoGain);
+    birdLfoGain.connect(birdGain.gain);
+    bird.connect(birdGain);
+    birdGain.connect(master);
+
+    noise.start(now);
+    bird.start(now);
+    birdLfo.start(now);
+    master.connect(audio.destination);
+    pondAmbientNodes = { master, noise, bird, birdLfo };
+  }
+
+  function stopPondAmbient() {
+    if (!pondAmbientNodes) return;
+    const audio = getContext();
+    const now = audio.currentTime;
+    const nodes = pondAmbientNodes;
+    pondAmbientNodes = null;
+    nodes.master.gain.cancelScheduledValues(now);
+    nodes.master.gain.setValueAtTime(nodes.master.gain.value, now);
+    nodes.master.gain.exponentialRampToValueAtTime(0.0001, now + 0.8);
+    window.setTimeout(() => {
+      try { nodes.noise.stop(); } catch { /* noop */ }
+      try { nodes.bird.stop(); nodes.birdLfo.stop(); } catch { /* noop */ }
+    }, 900);
+  }
+
   function buildAmbientBgm({ volume, freqs, noiseLevel }) {
     const audio = getContext();
     const now = audio.currentTime;
@@ -293,6 +400,10 @@ const CloudAudio = (() => {
     playSoftPop,
     playRipple,
     playFeed,
+    playFeedCollect,
+    playFootstep,
+    startPondAmbient,
+    stopPondAmbient,
     startBgm,
     stopBgm,
     startMungBgm,

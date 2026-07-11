@@ -13,24 +13,24 @@ const MungPlay = (() => {
   let keys = { up: false, down: false, left: false, right: false };
   let stickVec = { x: 0, y: 0 };
   let stickActive = false;
-  let player = { x: 800, y: 860, facing: 1 };
+  let player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0 };
+  let cam = { x: 0, y: 0 };
   let nearMachine = false;
   let nearPond = false;
+  let footstepTimer = 0;
+  const feedDispenseFx = document.getElementById("feed-dispense-fx");
+  const foodBagEl = document.querySelector(".pond-food-bag");
 
   const WORLD_W = 1600;
   const WORLD_H = 1100;
-  const PLAYER_SPEED = 190;
+  const PLAYER_SPEED = 210;
+  const PLAYER_ACCEL = 780;
+  const PLAYER_FRICTION = 920;
   const MAX_HELD_FOOD = 12;
   const MACHINE_POS = { x: 1295, y: 770 };
   const POND_RECT = { x: 398, y: 318, w: 724, h: 344 };
   const WALK_BOUNDS = { left: 120, right: 1480, top: 250, bottom: 1020 };
-  const FISH_KINDS = [
-    { emoji: "🐟", cls: "koi-orange" },
-    { emoji: "🐠", cls: "koi-red" },
-    { emoji: "🐟", cls: "koi-white" },
-    { emoji: "🐡", cls: "koi-orange" },
-    { emoji: "🐠", cls: "koi-red" },
-  ];
+  const FISH_KINDS = ["koi-orange", "koi-red", "koi-white", "koi-orange", "koi-red"];
 
   const overlay = document.getElementById("mung-overlay");
   const center = document.getElementById("mung-center");
@@ -214,10 +214,22 @@ const MungPlay = (() => {
     const bounds = pondInnerBounds();
     const kind = FISH_KINDS[index % FISH_KINDS.length];
     const el = document.createElement("div");
-    el.className = `pond-fish ${kind.cls}`;
-    el.textContent = kind.emoji;
-    const size = 20 + Math.random() * 16;
-    el.style.fontSize = `${size}px`;
+    el.className = `pond-fish ${kind}`;
+    const scale = 0.75 + Math.random() * 0.55;
+    el.style.transform = "translate(-50%, -50%)";
+    el.style.width = `${36 * scale}px`;
+    el.style.height = `${18 * scale}px`;
+
+    const body = document.createElement("div");
+    body.className = "pond-fish-body";
+    const spot = document.createElement("span");
+    spot.className = "pond-fish-spot";
+    spot.style.width = `${6 + Math.random() * 8}px`;
+    spot.style.height = `${5 + Math.random() * 6}px`;
+    spot.style.left = `${8 + Math.random() * 10}px`;
+    spot.style.top = `${3 + Math.random() * 5}px`;
+    body.appendChild(spot);
+    el.appendChild(body);
     pondFishEl.appendChild(el);
 
     return {
@@ -227,6 +239,7 @@ const MungPlay = (() => {
       vx: (Math.random() * 0.55 + 0.2) * (Math.random() < 0.5 ? -1 : 1),
       vy: (Math.random() - 0.5) * 0.3,
       turnTimer: 1 + Math.random() * 3,
+      excited: 0,
     };
   }
 
@@ -292,6 +305,13 @@ const MungPlay = (() => {
     }
   }
 
+  function pulseFoodBag() {
+    if (!foodBagEl) return;
+    foodBagEl.classList.remove("pulse");
+    void foodBagEl.offsetWidth;
+    foodBagEl.classList.add("pulse");
+  }
+
   function collectFood() {
     if (!active || activity !== "ripple") return;
     if (!nearMachine) return;
@@ -299,8 +319,24 @@ const MungPlay = (() => {
     const gain = Math.min(4, MAX_HELD_FOOD - heldFood);
     heldFood += gain;
     updateHeldFoodUI();
-    CloudAudio.playFeed();
+    pulseFoodBag();
+    if (CloudAudio.playFeedCollect) CloudAudio.playFeedCollect();
+    else CloudAudio.playFeed();
+    if (feedDispenseFx) {
+      feedDispenseFx.classList.remove("pop");
+      void feedDispenseFx.offsetWidth;
+      feedDispenseFx.classList.add("pop");
+    }
     updatePondPrompt();
+  }
+
+  function spawnPondRipple(x, y, big = false) {
+    const ripple = document.createElement("div");
+    ripple.className = `pond-world-ripple${big ? " big" : ""}`;
+    ripple.style.left = `${x}px`;
+    ripple.style.top = `${y}px`;
+    pondRipplesEl.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove());
   }
 
   function throwFood() {
@@ -309,17 +345,17 @@ const MungPlay = (() => {
 
     heldFood -= 1;
     updateHeldFoodUI();
+    pulseFoodBag();
     CloudAudio.playFeed();
 
-    const targetX = 40 + Math.random() * (POND_RECT.w - 80);
-    const targetY = 40 + Math.random() * (POND_RECT.h - 80);
+    const targetX = 50 + Math.random() * (POND_RECT.w - 100);
+    const targetY = 50 + Math.random() * (POND_RECT.h - 100);
     const el = document.createElement("div");
     el.className = "pond-pellet";
     pondFoodEl.appendChild(el);
 
-    // Start from player relative to pond layer
-    const startX = player.x - POND_RECT.x;
-    const startY = player.y - POND_RECT.y;
+    const startX = Math.max(10, Math.min(POND_RECT.w - 10, player.x - POND_RECT.x));
+    const startY = Math.max(-10, Math.min(POND_RECT.h + 20, player.y - POND_RECT.y));
 
     foods.push({
       el,
@@ -327,17 +363,16 @@ const MungPlay = (() => {
       y: startY,
       tx: targetX,
       ty: targetY,
-      life: 14 + Math.random() * 5,
+      life: 16 + Math.random() * 5,
       falling: true,
+      splash: false,
+      arc: 0,
     });
 
-    const ripple = document.createElement("div");
-    ripple.className = "pond-world-ripple";
-    ripple.style.left = `${targetX}px`;
-    ripple.style.top = `${targetY}px`;
-    pondRipplesEl.appendChild(ripple);
-    ripple.addEventListener("animationend", () => ripple.remove());
-    CloudAudio.playRipple();
+    fish.forEach((f) => {
+      f.excited = 2 + Math.random();
+      f.el.classList.add("excited");
+    });
 
     updatePondPrompt();
   }
@@ -347,23 +382,40 @@ const MungPlay = (() => {
     else if (nearPond && heldFood > 0) throwFood();
   }
 
-  function updateCamera() {
+  function updateCamera(dt = 0.016) {
     const viewW = window.innerWidth;
     const viewH = window.innerHeight;
-    let camX = player.x - viewW / 2;
-    let camY = player.y - viewH / 2;
-    camX = Math.max(0, Math.min(WORLD_W - viewW, camX));
-    camY = Math.max(0, Math.min(WORLD_H - viewH, camY));
-    if (WORLD_W < viewW) camX = (WORLD_W - viewW) / 2;
-    if (WORLD_H < viewH) camY = (WORLD_H - viewH) / 2;
-    pondWorld.style.transform = `translate(${-camX}px, ${-camY}px)`;
+    let targetX = player.x - viewW / 2;
+    let targetY = player.y - viewH / 2;
+    targetX = Math.max(0, Math.min(Math.max(0, WORLD_W - viewW), targetX));
+    targetY = Math.max(0, Math.min(Math.max(0, WORLD_H - viewH), targetY));
+    if (WORLD_W < viewW) targetX = (WORLD_W - viewW) / 2;
+    if (WORLD_H < viewH) targetY = (WORLD_H - viewH) / 2;
+
+    const lerp = 1 - Math.exp(-8 * dt);
+    cam.x += (targetX - cam.x) * lerp;
+    cam.y += (targetY - cam.y) * lerp;
+    const parallax = Math.sin(cam.x * 0.002) * 2;
+    pondWorld.style.transform = `translate(${-cam.x}px, ${-cam.y + parallax * 0.15}px)`;
   }
 
   function isWalkBlocked(x, y) {
-    // Soft block deep water center so player walks around the pond
-    const deep = x > POND_RECT.x + 70 && x < POND_RECT.x + POND_RECT.w - 70
-      && y > POND_RECT.y + 70 && y < POND_RECT.y + POND_RECT.h - 70;
+    const deep = x > POND_RECT.x + 78 && x < POND_RECT.x + POND_RECT.w - 78
+      && y > POND_RECT.y + 78 && y < POND_RECT.y + POND_RECT.h - 78;
     return deep;
+  }
+
+  function softPushFromWater(x, y) {
+    if (!isWalkBlocked(x, y)) return { x, y };
+    const cx = POND_RECT.x + POND_RECT.w / 2;
+    const cy = POND_RECT.y + POND_RECT.h / 2;
+    const dx = x - cx;
+    const dy = y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    return {
+      x: cx + (dx / len) * (POND_RECT.w * 0.42),
+      y: cy + (dy / len) * (POND_RECT.h * 0.42),
+    };
   }
 
   function startPond() {
@@ -376,21 +428,23 @@ const MungPlay = (() => {
     const sceneName = document.getElementById("mung-scene-name");
     if (sceneName) sceneName.textContent = "부산 충렬사 · 의중지";
 
-    player = { x: 800, y: 860, facing: 1 };
+    player = { x: 800, y: 860, facing: 1, vx: 0, vy: 0 };
+    cam = { x: player.x - window.innerWidth / 2, y: player.y - window.innerHeight / 2 };
     heldFood = 0;
+    footstepTimer = 0;
     updateHeldFoodUI();
     keys = { up: false, down: false, left: false, right: false };
     stickVec = { x: 0, y: 0 };
     stickActive = false;
-    if (pondStickKnob) {
-      pondStickKnob.style.transform = "translate(0, 0)";
-    }
+    if (pondStickKnob) pondStickKnob.style.transform = "translate(0, 0)";
+    if (pondPlayer) pondPlayer.classList.remove("walking");
 
-    fish = Array.from({ length: 9 }, (_, i) => createFish(i));
+    fish = Array.from({ length: 10 }, (_, i) => createFish(i));
     foods = [];
     lastPondTick = performance.now();
-    updateCamera();
+    updateCamera(1);
     updatePondPrompt();
+    if (CloudAudio.startPondAmbient) CloudAudio.startPondAmbient();
     pondRaf = requestAnimationFrame(tickPond);
   }
 
@@ -400,9 +454,11 @@ const MungPlay = (() => {
     fish = [];
     foods = [];
     heldFood = 0;
+    footstepTimer = 0;
     keys = { up: false, down: false, left: false, right: false };
     stickVec = { x: 0, y: 0 };
     stickActive = false;
+    if (pondPlayer) pondPlayer.classList.remove("walking");
     if (pondFishEl) pondFishEl.innerHTML = "";
     if (pondFoodEl) pondFoodEl.innerHTML = "";
     if (pondRipplesEl) pondRipplesEl.innerHTML = "";
@@ -411,6 +467,7 @@ const MungPlay = (() => {
       pondLayer.hidden = true;
       pondLayer.setAttribute("aria-hidden", "true");
     }
+    if (CloudAudio.stopPondAmbient) CloudAudio.stopPondAmbient();
     if (clearMode) overlay.classList.remove("pond-mode");
   }
 
@@ -418,7 +475,7 @@ const MungPlay = (() => {
     let best = null;
     let bestDist = Infinity;
     foods.forEach((food) => {
-      if (food.life <= 0) return;
+      if (food.life <= 0 || food.falling) return;
       const dx = food.x - fishItem.x;
       const dy = food.y - fishItem.y;
       const dist = Math.hypot(dx, dy);
@@ -427,7 +484,7 @@ const MungPlay = (() => {
         best = food;
       }
     });
-    return bestDist < 220 ? best : null;
+    return bestDist < 260 ? best : null;
   }
 
   function tickPond(now) {
@@ -448,29 +505,78 @@ const MungPlay = (() => {
     if (mag > 0.08) {
       const nx = mx / mag;
       const ny = my / mag;
-      let nextX = player.x + nx * PLAYER_SPEED * dt;
-      let nextY = player.y + ny * PLAYER_SPEED * dt;
-      nextX = Math.max(WALK_BOUNDS.left, Math.min(WALK_BOUNDS.right, nextX));
-      nextY = Math.max(WALK_BOUNDS.top, Math.min(WALK_BOUNDS.bottom, nextY));
-
-      if (!isWalkBlocked(nextX, player.y)) player.x = nextX;
-      if (!isWalkBlocked(player.x, nextY)) player.y = nextY;
+      player.vx += nx * PLAYER_ACCEL * dt;
+      player.vy += ny * PLAYER_ACCEL * dt;
       if (Math.abs(nx) > 0.2) player.facing = nx < 0 ? -1 : 1;
+    } else {
+      const damp = Math.exp(-PLAYER_FRICTION * dt / PLAYER_SPEED);
+      player.vx *= damp;
+      player.vy *= damp;
     }
 
+    const speed = Math.hypot(player.vx, player.vy);
+    if (speed > PLAYER_SPEED) {
+      player.vx = (player.vx / speed) * PLAYER_SPEED;
+      player.vy = (player.vy / speed) * PLAYER_SPEED;
+    }
+
+    let nextX = player.x + player.vx * dt;
+    let nextY = player.y + player.vy * dt;
+    nextX = Math.max(WALK_BOUNDS.left, Math.min(WALK_BOUNDS.right, nextX));
+    nextY = Math.max(WALK_BOUNDS.top, Math.min(WALK_BOUNDS.bottom, nextY));
+
+    if (isWalkBlocked(nextX, player.y)) {
+      const pushed = softPushFromWater(nextX, player.y);
+      nextX = pushed.x;
+      player.vx *= 0.35;
+    }
+    if (isWalkBlocked(player.x, nextY)) {
+      const pushed = softPushFromWater(player.x, nextY);
+      nextY = pushed.y;
+      player.vy *= 0.35;
+    }
+
+    player.x = nextX;
+    player.y = nextY;
+
+    const moving = Math.hypot(player.vx, player.vy) > 18;
+    pondPlayer.classList.toggle("walking", moving);
     pondPlayer.style.left = `${player.x}px`;
     pondPlayer.style.top = `${player.y}px`;
     pondPlayer.style.transform = `scaleX(${player.facing})`;
-    updateCamera();
+
+    if (moving) {
+      footstepTimer -= dt;
+      if (footstepTimer <= 0) {
+        footstepTimer = 0.34;
+        if (CloudAudio.playFootstep) CloudAudio.playFootstep();
+      }
+    } else {
+      footstepTimer = 0;
+    }
+
+    updateCamera(dt);
     updatePondPrompt();
 
     const bounds = pondInnerBounds();
 
     foods = foods.filter((food) => {
       if (food.falling) {
-        food.x += (food.tx - food.x) * Math.min(1, dt * 2.4);
-        food.y += (food.ty - food.y) * Math.min(1, dt * 2.8);
-        if (Math.hypot(food.tx - food.x, food.ty - food.y) < 8) food.falling = false;
+        food.arc += dt;
+        const t = Math.min(1, food.arc * 2.2);
+        food.x = food.x + (food.tx - food.x) * Math.min(1, dt * 3.2);
+        food.y = food.y + (food.ty - food.y) * Math.min(1, dt * 2.6) - Math.sin(t * Math.PI) * 18 * dt * 8;
+        if (Math.hypot(food.tx - food.x, food.ty - food.y) < 10) {
+          food.x = food.tx;
+          food.y = food.ty;
+          food.falling = false;
+          if (!food.splash) {
+            food.splash = true;
+            spawnPondRipple(food.tx, food.ty, true);
+            spawnPondRipple(food.tx + 6, food.ty - 4, false);
+            CloudAudio.playRipple();
+          }
+        }
       }
       food.life -= dt;
       food.el.style.left = `${food.x}px`;
@@ -484,32 +590,38 @@ const MungPlay = (() => {
     });
 
     fish.forEach((f) => {
+      if (f.excited > 0) {
+        f.excited -= dt;
+        if (f.excited <= 0) f.el.classList.remove("excited");
+      }
+
       const target = nearestFood(f);
       if (target) {
         const dx = target.x - f.x;
         const dy = target.y - f.y;
         const dist = Math.hypot(dx, dy) || 1;
-        f.vx += (dx / dist) * 1.7 * dt;
-        f.vy += (dy / dist) * 1.7 * dt;
-        if (dist < 16) {
+        f.vx += (dx / dist) * (2.4 + f.excited) * dt;
+        f.vy += (dy / dist) * (2.4 + f.excited) * dt;
+        if (dist < 14) {
           target.life = 0;
-          f.vx *= 0.35;
-          f.vy *= 0.35;
+          f.vx *= 0.3;
+          f.vy *= 0.3;
+          spawnPondRipple(f.x, f.y, false);
         }
       } else {
         f.turnTimer -= dt;
         if (f.turnTimer <= 0) {
-          f.turnTimer = 1.4 + Math.random() * 2.8;
-          f.vx += (Math.random() - 0.5) * 0.7;
-          f.vy += (Math.random() - 0.5) * 0.45;
+          f.turnTimer = 1.2 + Math.random() * 2.6;
+          f.vx += (Math.random() - 0.5) * 0.75;
+          f.vy += (Math.random() - 0.5) * 0.5;
         }
       }
 
-      const speed = Math.hypot(f.vx, f.vy);
-      const maxSpeed = target ? 90 : 48;
-      if (speed > maxSpeed) {
-        f.vx = (f.vx / speed) * maxSpeed;
-        f.vy = (f.vy / speed) * maxSpeed;
+      const fSpeed = Math.hypot(f.vx, f.vy);
+      const maxSpeed = target ? 110 : (f.excited > 0 ? 70 : 48);
+      if (fSpeed > maxSpeed) {
+        f.vx = (f.vx / fSpeed) * maxSpeed;
+        f.vy = (f.vy / fSpeed) * maxSpeed;
       }
 
       f.x += f.vx * dt * 60;
@@ -532,9 +644,9 @@ const MungPlay = (() => {
         f.vy = -Math.abs(f.vy);
       }
 
-      f.el.style.transform = `translate(-50%, -50%) scaleX(${f.vx < 0 ? -1 : 1})`;
       f.el.style.left = `${f.x}px`;
       f.el.style.top = `${f.y}px`;
+      f.el.style.transform = `translate(-50%, -50%) scaleX(${f.vx < 0 ? -1 : 1})`;
     });
 
     pondRaf = requestAnimationFrame(tickPond);
@@ -723,7 +835,7 @@ const MungPlay = (() => {
   window.addEventListener("touchend", onCanvasUp);
   window.addEventListener("resize", () => {
     if (active && activity === "draw") resizeCanvas();
-    if (active && activity === "ripple") updateCamera();
+    if (active && activity === "ripple") updateCamera(1);
   });
 
   return {

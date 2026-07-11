@@ -111,44 +111,92 @@
     <div id="pond-layer" class="pond-layer hidden" aria-hidden="true">
       <div id="pond-viewport" class="pond-viewport">
         <div id="pond-world" class="pond-world">
-          <div class="chung-sky"></div>
+          <div class="chung-sky">
+            <div class="chung-sun"></div>
+            <div class="chung-cloud c1"></div>
+            <div class="chung-cloud c2"></div>
+            <div class="chung-cloud c3"></div>
+          </div>
           <div class="chung-hills"></div>
-          <div class="chung-trees chung-trees-left" aria-hidden="true"></div>
-          <div class="chung-trees chung-trees-right" aria-hidden="true"></div>
+          <div class="chung-grove left" aria-hidden="true">
+            <span class="tree pine"></span>
+            <span class="tree plum"></span>
+            <span class="tree pine tall"></span>
+          </div>
+          <div class="chung-grove right" aria-hidden="true">
+            <span class="tree plum"></span>
+            <span class="tree pine tall"></span>
+            <span class="tree plum small"></span>
+          </div>
           <div class="chung-gate" aria-hidden="true">
             <div class="chung-roof"></div>
+            <div class="chung-roof-edge"></div>
             <div class="chung-pillars"></div>
+            <div class="chung-gate-board"></div>
             <span class="chung-gate-label">忠烈祠</span>
           </div>
+          <div class="chung-lawn"></div>
           <div class="chung-path"></div>
-          <div class="chung-bench" aria-hidden="true"></div>
-          <div class="chung-sign" aria-hidden="true">義中池</div>
+          <div class="chung-path-edge"></div>
+          <div class="chung-bench" aria-hidden="true">
+            <span class="bench-seat"></span>
+            <span class="bench-legs"></span>
+          </div>
+          <div class="chung-lantern left" aria-hidden="true"></div>
+          <div class="chung-lantern right" aria-hidden="true"></div>
+          <div class="chung-sign" aria-hidden="true">
+            <span class="sign-post"></span>
+            <span class="sign-board">義中池</span>
+          </div>
 
           <div id="chung-pond" class="chung-pond">
+            <div class="chung-pond-shadow"></div>
             <div class="chung-pond-rim"></div>
-            <div class="pond-water"></div>
+            <div class="chung-pond-stones"></div>
+            <div class="pond-water">
+              <div class="pond-caustic"></div>
+              <div class="pond-sheen"></div>
+              <div class="pond-weed w1"></div>
+              <div class="pond-weed w2"></div>
+              <div class="pond-weed w3"></div>
+            </div>
             <div id="pond-fish" class="pond-fish-layer"></div>
             <div id="pond-food" class="pond-food-layer"></div>
             <div id="pond-ripples" class="pond-ripples-layer"></div>
+            <div class="pond-sparkle"></div>
           </div>
 
           <button id="feed-machine" class="feed-machine" type="button" aria-label="먹이 자판기">
-            <span class="feed-machine-icon" aria-hidden="true">🎰</span>
+            <span class="feed-machine-body">
+              <span class="feed-machine-screen"></span>
+              <span class="feed-machine-slot"></span>
+              <span class="feed-machine-tray"></span>
+            </span>
             <span class="feed-machine-text">
               <strong>먹이 자판기</strong>
               <small>가까이 가서 담기</small>
             </span>
           </button>
+          <div id="feed-dispense-fx" class="feed-dispense-fx" aria-hidden="true"></div>
+
+          <div id="pond-remotes" class="pond-remotes"></div>
 
           <div id="pond-player" class="pond-player" aria-hidden="true">
-            <span class="pond-player-body">🚶</span>
+            <span class="pond-player-shadow"></span>
+            <span class="pond-player-figure">
+              <span class="pp-head"></span>
+              <span class="pp-body"></span>
+              <span class="pp-leg l"></span>
+              <span class="pp-leg r"></span>
+            </span>
+            <span class="pond-player-name me">나</span>
           </div>
         </div>
       </div>
 
       <div class="pond-hud">
         <div class="pond-food-bag" title="들고 있는 먹이">
-          <span aria-hidden="true">🥜</span>
+          <span class="bag-icon" aria-hidden="true"></span>
           <strong id="held-food-count">0</strong>
           <small>/ 12</small>
         </div>
@@ -210,22 +258,16 @@
       <p id="mung-message" class="mung-message"></p>
 
       <div class="mung-activities" role="tablist">
-        <button class="mung-activity" type="button" data-activity="listen" title="감상 모드">🎧 감상</button>
-        <button class="mung-activity active" type="button" data-activity="cloud">☁️ 구름</button>
-        <button class="mung-activity" type="button" data-activity="ripple">🐟 연못</button>
-        <button class="mung-activity" type="button" data-activity="bubble">🫧 거품</button>
-        <button class="mung-activity" type="button" data-activity="draw">✏️ 낙서</button>
-        <button class="mung-activity" type="button" data-activity="breath">🌬️ 호흡</button>
+        <button class="mung-activity" type="button" data-activity="cloud">☁️ 구름</button>
+        <button class="mung-activity active" type="button" data-activity="ripple">🐟 연못</button>
       </div>
 
-      <div class="mung-center" id="mung-center">
-        <button id="mung-cloud-btn" class="mung-cloud-btn" type="button" aria-label="멍하며 구름 클릭">
+      <div class="mung-center hidden" id="mung-center">
+        <button id="mung-cloud-btn" class="mung-cloud-btn hidden" type="button" aria-label="멍하며 구름 클릭">
           <span class="cloud-emoji" aria-hidden="true">☁️</span>
         </button>
       </div>
-      <p id="mung-hint" class="mung-hint">천천히 눌러도 괜찮아요</p>
-
-      <button id="mung-exit-listen" class="mung-exit-listen" type="button">감상 끝내기</button>
+      <p id="mung-hint" class="mung-hint">충렬사 연못을 걸어다니며 잉어에게 먹이를 주세요</p>
 
       <div class="mung-bottom">
         <span id="mung-cloud-display" class="mung-cloud-display">0 구름</span>
