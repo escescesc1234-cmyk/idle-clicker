@@ -687,6 +687,7 @@ body.mung-open {
 
 .mung-overlay.pond-mode .mung-bg-img {
   opacity: 0;
+  visibility: hidden;
 }
 
 .mung-overlay.pond-mode .mung-scene {
@@ -751,30 +752,28 @@ body.mung-open {
 }
 
 .feed-machine {
-  display: none;
+  display: none !important;
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
+  z-index: 6;
   align-items: center;
   gap: 10px;
-  align-self: flex-end;
-  margin: 10px 0 0 auto;
   border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
   padding: 10px 14px;
-  background: linear-gradient(160deg, rgba(40, 70, 90, 0.72), rgba(20, 45, 60, 0.78));
+  background: linear-gradient(160deg, rgba(40, 70, 90, 0.82), rgba(20, 45, 60, 0.88));
   color: #fff;
   cursor: pointer;
   backdrop-filter: blur(8px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
   pointer-events: auto;
-  z-index: 5;
   text-align: left;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.feed-machine:not(.hidden) {
-  display: inline-flex;
-}
-
-.feed-machine.hidden {
-  display: none !important;
+.mung-overlay.pond-mode .feed-machine:not([hidden]) {
+  display: inline-flex !important;
 }
 
 .feed-machine:active {
@@ -799,6 +798,17 @@ body.mung-open {
 .feed-machine-text small {
   font-size: 0.72rem;
   opacity: 0.8;
+}
+
+.mung-overlay.pond-mode .mung-message,
+.mung-overlay.pond-mode .mung-hint,
+.mung-overlay.pond-mode .mung-bottom {
+  pointer-events: none;
+}
+
+.mung-overlay.pond-mode .pond-layer {
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .mung-bubbles {
@@ -1208,7 +1218,6 @@ body.mung-open {
 .mung-bgm-control,
 .mung-volume-wrap,
 .mung-volume-slider,
-.feed-machine,
 .mung-exit-listen {
   pointer-events: auto;
 }
@@ -1525,11 +1534,26 @@ body.mung-open {
     font-size: 1rem;
   }
 
-  .feed-machine {
-    align-self: stretch;
+  .mung-overlay.pond-mode .feed-machine:not([hidden]) {
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    width: auto;
     justify-content: center;
-    margin-top: 8px;
     min-height: 52px;
+  }
+
+  .mung-overlay.pond-mode .mung-bottom {
+    margin-bottom: 64px;
+  }
+
+  .pond-water {
+    top: 22%;
+    bottom: 18%;
+  }
+
+  .pond-fish {
+    font-size: 1.35em;
   }
 
   .mung-overlay.listen-mode .mung-top {

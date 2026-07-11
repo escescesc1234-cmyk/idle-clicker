@@ -74,7 +74,6 @@ const MungPlay = (() => {
   }
 
   function setActivity(next) {
-    const prev = activity;
     activity = next;
     document.querySelectorAll(".mung-activity").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.activity === next);
@@ -106,7 +105,7 @@ const MungPlay = (() => {
     else stopBubbles();
 
     if (isPond) startPond();
-    else if (prev === "ripple") stopPond();
+    else stopPond();
 
     if (window.GameBridge) {
       window.GameBridge.setMungActivity(next);
@@ -209,9 +208,12 @@ const MungPlay = (() => {
   }
 
   function startPond() {
-    stopPond();
+    stopPond(false);
+    overlay.classList.add("pond-mode");
     pondLayer.classList.remove("hidden");
+    pondLayer.hidden = false;
     pondLayer.setAttribute("aria-hidden", "false");
+    feedMachine.hidden = false;
     feedMachine.classList.remove("hidden");
 
     fish = Array.from({ length: 7 }, (_, i) => createFish(i));
@@ -220,16 +222,23 @@ const MungPlay = (() => {
     pondRaf = requestAnimationFrame(tickPond);
   }
 
-  function stopPond() {
+  function stopPond(clearMode = true) {
     if (pondRaf) cancelAnimationFrame(pondRaf);
     pondRaf = null;
     fish = [];
     foods = [];
-    pondFishEl.innerHTML = "";
-    pondFoodEl.innerHTML = "";
-    pondLayer.classList.add("hidden");
-    pondLayer.setAttribute("aria-hidden", "true");
-    feedMachine.classList.add("hidden");
+    if (pondFishEl) pondFishEl.innerHTML = "";
+    if (pondFoodEl) pondFoodEl.innerHTML = "";
+    if (pondLayer) {
+      pondLayer.classList.add("hidden");
+      pondLayer.hidden = true;
+      pondLayer.setAttribute("aria-hidden", "true");
+    }
+    if (feedMachine) {
+      feedMachine.hidden = true;
+      feedMachine.classList.add("hidden");
+    }
+    if (clearMode) overlay.classList.remove("pond-mode");
   }
 
   function dispenseFood() {
@@ -377,11 +386,24 @@ const MungPlay = (() => {
     lastPoint = { x, y };
   }
 
+  function onPondPointer(event) {
+    if (!active || activity !== "ripple") return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    event.stopPropagation();
+    createRipple(event.clientX, event.clientY);
+  }
+
   function onOverlayPointer(event) {
     if (!active) return;
     if (activity !== "ripple") return;
     if (event.pointerType === "mouse" && event.button !== 0) return;
-    if (event.target.closest("button, .mung-ui, .mung-players, .mung-side-panel, .feed-machine")) return;
+    if (
+      event.target.closest(
+        "button, a, input, textarea, select, .mung-top, .mung-activities, .mung-side-panel, .mung-players, .feed-machine, .mung-exit-listen, .mung-cloud-btn, .pond-layer",
+      )
+    ) {
+      return;
+    }
     createRipple(event.clientX, event.clientY);
   }
 
@@ -449,16 +471,20 @@ const MungPlay = (() => {
     exitListenBtn.addEventListener("click", () => setActivity("cloud"));
   }
 
-  feedMachine.addEventListener("click", (event) => {
-    event.stopPropagation();
-    dispenseFood();
-  });
-
   document.querySelectorAll(".mung-activity").forEach((btn) => {
     btn.addEventListener("click", () => setActivity(btn.dataset.activity));
   });
 
   overlay.addEventListener("pointerdown", onOverlayPointer);
+  pondLayer.addEventListener("pointerdown", onPondPointer);
+  feedMachine.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    dispenseFood();
+  });
+  feedMachine.addEventListener("pointerdown", (event) => {
+    event.stopPropagation();
+  });
   canvas.addEventListener("mousedown", onCanvasDown);
   canvas.addEventListener("mousemove", onCanvasMove);
   window.addEventListener("mouseup", onCanvasUp);
