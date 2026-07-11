@@ -417,6 +417,7 @@ function enterMungMode() {
   CloudAudio.unlock();
   mungActive = true;
   mungActivity = "cloud";
+  document.body.classList.add("mung-open");
   mungOverlay.classList.remove("hidden");
   mungOverlay.setAttribute("aria-hidden", "false");
 
@@ -431,6 +432,7 @@ function enterMungMode() {
 function exitMungMode() {
   mungActive = false;
   mungActivity = "cloud";
+  document.body.classList.remove("mung-open");
   mungOverlay.classList.add("hidden");
   mungOverlay.setAttribute("aria-hidden", "true");
   clearMungEffects();

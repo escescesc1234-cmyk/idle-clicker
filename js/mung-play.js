@@ -22,13 +22,15 @@ const MungPlay = (() => {
   const myBubbleCountEl = document.getElementById("my-bubble-count");
 
   const hints = {
-    listen: "배경과 소리만 감상해요. V 키로 다시 나올 수 있어요",
+    listen: "배경과 소리만 감상해요. 「감상 끝내기」로 나와요",
     cloud: "천천히 눌러도 괜찮아요",
     ripple: "화면 아무 곳이나 눌러 물결을 만들어요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
-    draw: "마우스로 천천히 그려보세요. 사라져도 괜찮아요",
+    draw: "손가락이나 마우스로 천천히 그려보세요",
     breath: "원이 커질 때 들이쉬고, 작아질 때 내쉬어요",
   };
+
+  const exitListenBtn = document.getElementById("mung-exit-listen");
 
   function resizeCanvas() {
     canvas.width = window.innerWidth;
@@ -168,9 +170,10 @@ const MungPlay = (() => {
     lastPoint = { x, y };
   }
 
-  function onOverlayClick(event) {
+  function onOverlayPointer(event) {
     if (!active) return;
     if (activity !== "ripple") return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
     if (event.target.closest("button, .mung-ui, .mung-players, .mung-side-panel")) return;
     createRipple(event.clientX, event.clientY);
   }
@@ -190,6 +193,11 @@ const MungPlay = (() => {
   function onCanvasUp() {
     drawing = false;
     lastPoint = null;
+  }
+
+  function getTouchPoint(event) {
+    const t = event.touches[0] || event.changedTouches[0];
+    return t ? { clientX: t.clientX, clientY: t.clientY } : null;
   }
 
   function start() {
@@ -229,22 +237,30 @@ const MungPlay = (() => {
     bubbleStatsPanel.classList.toggle("collapsed");
   });
 
+  if (exitListenBtn) {
+    exitListenBtn.addEventListener("click", () => setActivity("cloud"));
+  }
+
   document.querySelectorAll(".mung-activity").forEach((btn) => {
     btn.addEventListener("click", () => setActivity(btn.dataset.activity));
   });
 
-  overlay.addEventListener("click", onOverlayClick);
+  overlay.addEventListener("pointerdown", onOverlayPointer);
   canvas.addEventListener("mousedown", onCanvasDown);
   canvas.addEventListener("mousemove", onCanvasMove);
   window.addEventListener("mouseup", onCanvasUp);
   canvas.addEventListener("touchstart", (e) => {
-    const t = e.touches[0];
-    onCanvasDown({ clientX: t.clientX, clientY: t.clientY });
-  }, { passive: true });
+    const point = getTouchPoint(e);
+    if (!point) return;
+    e.preventDefault();
+    onCanvasDown(point);
+  }, { passive: false });
   canvas.addEventListener("touchmove", (e) => {
-    const t = e.touches[0];
-    onCanvasMove({ clientX: t.clientX, clientY: t.clientY });
-  }, { passive: true });
+    const point = getTouchPoint(e);
+    if (!point) return;
+    e.preventDefault();
+    onCanvasMove(point);
+  }, { passive: false });
   window.addEventListener("touchend", onCanvasUp);
   window.addEventListener("resize", () => {
     if (active && activity === "draw") resizeCanvas();
