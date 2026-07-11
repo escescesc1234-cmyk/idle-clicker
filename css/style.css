@@ -677,8 +677,8 @@ body.mung-open {
   position: absolute;
   inset: 0;
   z-index: 1;
-  pointer-events: none;
   overflow: hidden;
+  pointer-events: none;
 }
 
 .pond-layer.hidden {
@@ -691,42 +691,197 @@ body.mung-open {
 }
 
 .mung-overlay.pond-mode .mung-scene {
+  background: linear-gradient(180deg, #cfe6f2 0%, #b7d4c4 42%, #9fbf9a 100%);
+}
+
+.mung-overlay.pond-mode .pond-layer {
+  pointer-events: auto;
+}
+
+.mung-overlay.pond-mode .mung-message,
+.mung-overlay.pond-mode .mung-hint,
+.mung-overlay.pond-mode .mung-bottom {
+  pointer-events: none;
+}
+
+.mung-overlay.pond-mode .mung-message {
+  display: none;
+}
+
+.mung-overlay.pond-mode .mung-hint {
+  opacity: 0.85;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+.pond-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.pond-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 1100px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.chung-sky {
+  position: absolute;
+  inset: 0 0 45% 0;
   background:
-    radial-gradient(ellipse at 50% 70%, rgba(90, 180, 170, 0.35) 0%, transparent 55%),
-    linear-gradient(180deg, #8ec8e8 0%, #5fa8c8 28%, #3d8f9e 55%, #2f6f78 78%, #24585e 100%);
+    radial-gradient(ellipse at 70% 18%, rgba(255, 255, 255, 0.55), transparent 40%),
+    linear-gradient(180deg, #d7eef8 0%, #c3dfd0 100%);
+}
+
+.chung-hills {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 18%;
+  height: 28%;
+  background:
+    radial-gradient(ellipse at 20% 80%, #7fa87a 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 90%, #6f9a72 0%, transparent 50%),
+    linear-gradient(180deg, transparent 0%, #8fb389 100%);
+  opacity: 0.85;
+}
+
+.chung-trees {
+  position: absolute;
+  top: 16%;
+  width: 220px;
+  height: 260px;
+  background:
+    radial-gradient(circle at 50% 40%, #f3b6c8 0 18%, transparent 19%),
+    radial-gradient(circle at 35% 55%, #6f9b63 0 28%, transparent 29%),
+    radial-gradient(circle at 65% 58%, #5f8a55 0 30%, transparent 31%),
+    linear-gradient(180deg, transparent 55%, #6b4a2e 55% 100%);
+  filter: drop-shadow(0 8px 12px rgba(40, 60, 40, 0.2));
+}
+
+.chung-trees-left { left: 70px; }
+.chung-trees-right { right: 90px; transform: scaleX(-1); }
+
+.chung-gate {
+  position: absolute;
+  left: 50%;
+  top: 70px;
+  width: 260px;
+  height: 150px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.chung-roof {
+  width: 100%;
+  height: 54px;
+  background: linear-gradient(180deg, #5a2f2a 0%, #3d1f1c 100%);
+  clip-path: polygon(4% 100%, 12% 35%, 50% 0, 88% 35%, 96% 100%);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.chung-pillars {
+  width: 70%;
+  height: 70px;
+  margin-top: -4px;
+  background:
+    linear-gradient(#d9c4a0, #d9c4a0) left / 14px 100% no-repeat,
+    linear-gradient(#d9c4a0, #d9c4a0) right / 14px 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent);
+  border-bottom: 8px solid #8a6a45;
+}
+
+.chung-gate-label {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.2em;
+  color: rgba(70, 50, 40, 0.75);
+  font-weight: 700;
+}
+
+.chung-path {
+  position: absolute;
+  left: 180px;
+  right: 180px;
+  top: 720px;
+  height: 160px;
+  border-radius: 28px;
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.08) 0 18px, transparent 18px 36px),
+    linear-gradient(180deg, #cfc3ad 0%, #b7a88f 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.25), 0 8px 18px rgba(60, 50, 30, 0.15);
+}
+
+.chung-bench {
+  position: absolute;
+  left: 260px;
+  top: 690px;
+  width: 90px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #8b5a3c, #6d432c);
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.18);
+}
+
+.chung-sign {
+  position: absolute;
+  left: 470px;
+  top: 290px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(120, 100, 70, 0.35);
+  color: #5a4634;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-size: 0.85rem;
+  backdrop-filter: blur(4px);
+}
+
+.chung-pond {
+  position: absolute;
+  left: 380px;
+  top: 300px;
+  width: 760px;
+  height: 380px;
+}
+
+.chung-pond-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 42% 48% 40% 44% / 36% 34% 48% 46%;
+  background: linear-gradient(160deg, #9d978c, #6f6a61);
+  box-shadow: 0 14px 28px rgba(40, 50, 40, 0.22);
 }
 
 .pond-water {
   position: absolute;
-  left: 4%;
-  right: 4%;
-  top: 24%;
-  bottom: 14%;
-  border-radius: 48% 48% 42% 42% / 18% 18% 28% 28%;
+  inset: 18px;
+  border-radius: 42% 48% 40% 44% / 36% 34% 48% 46%;
   background:
-    radial-gradient(ellipse at 30% 30%, rgba(180, 235, 230, 0.35), transparent 45%),
-    linear-gradient(180deg, rgba(120, 200, 190, 0.55) 0%, rgba(40, 110, 120, 0.75) 100%);
+    radial-gradient(ellipse at 30% 28%, rgba(190, 235, 220, 0.4), transparent 42%),
+    linear-gradient(180deg, #6fb8b0 0%, #3f8790 55%, #2f6a72 100%);
   box-shadow:
-    inset 0 10px 30px rgba(255, 255, 255, 0.18),
-    inset 0 -20px 40px rgba(10, 40, 50, 0.35),
-    0 12px 40px rgba(20, 60, 70, 0.25);
-  border: 2px solid rgba(255, 255, 255, 0.18);
-}
-
-.pond-water::before {
-  content: "";
-  position: absolute;
-  inset: 12% 10% auto;
-  height: 18%;
-  border-radius: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent);
-  filter: blur(2px);
+    inset 0 10px 24px rgba(255, 255, 255, 0.2),
+    inset 0 -18px 30px rgba(10, 40, 50, 0.28);
+  overflow: hidden;
 }
 
 .pond-fish-layer,
-.pond-food-layer {
+.pond-food-layer,
+.pond-ripples-layer {
   position: absolute;
-  inset: 0;
+  inset: 18px;
+  border-radius: inherit;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .pond-fish {
@@ -734,16 +889,20 @@ body.mung-open {
   left: 0;
   top: 0;
   line-height: 1;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.25));
   will-change: transform, left, top;
   user-select: none;
   pointer-events: none;
 }
 
+.pond-fish.koi-orange { filter: hue-rotate(10deg) saturate(1.4); }
+.pond-fish.koi-white { filter: grayscale(0.2) brightness(1.25); }
+.pond-fish.koi-red { filter: hue-rotate(-15deg) saturate(1.6); }
+
 .pond-pellet {
   position: absolute;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   margin: -4px 0 0 -4px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 30%, #f5d76e, #c48a2a);
@@ -751,37 +910,48 @@ body.mung-open {
   pointer-events: none;
 }
 
-.feed-machine {
-  display: none !important;
+.pond-world-ripple {
   position: absolute;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(88px, calc(env(safe-area-inset-bottom) + 72px));
-  z-index: 6;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
-  padding: 10px 14px;
-  background: linear-gradient(160deg, rgba(40, 70, 90, 0.82), rgba(20, 45, 60, 0.88));
-  color: #fff;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
-  pointer-events: auto;
-  text-align: left;
-  -webkit-tap-highlight-color: transparent;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: ripple-expand 1.1s ease-out forwards;
+  pointer-events: none;
 }
 
-.mung-overlay.pond-mode .feed-machine:not([hidden]) {
-  display: inline-flex !important;
+.feed-machine {
+  position: absolute;
+  left: 1220px;
+  top: 730px;
+  width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 16px;
+  padding: 10px 12px;
+  background: linear-gradient(160deg, rgba(55, 75, 95, 0.92), rgba(28, 45, 60, 0.95));
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+  z-index: 3;
+}
+
+.feed-machine.nearby {
+  outline: 2px solid rgba(255, 220, 120, 0.85);
+  box-shadow: 0 0 0 4px rgba(255, 200, 80, 0.2), 0 10px 24px rgba(0, 0, 0, 0.25);
 }
 
 .feed-machine:active {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 .feed-machine-icon {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -792,23 +962,144 @@ body.mung-open {
 }
 
 .feed-machine-text strong {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 .feed-machine-text small {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   opacity: 0.8;
 }
 
-.mung-overlay.pond-mode .mung-message,
-.mung-overlay.pond-mode .mung-hint,
-.mung-overlay.pond-mode .mung-bottom {
+.pond-player {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  transition: filter 0.15s;
+}
+
+.pond-player-body {
+  font-size: 2rem;
+  line-height: 1;
+  display: block;
+}
+
+.pond-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
   pointer-events: none;
 }
 
-.mung-overlay.pond-mode .pond-layer {
-  z-index: 1;
+.pond-food-bag {
+  position: absolute;
+  left: max(12px, env(safe-area-inset-left));
+  top: max(120px, calc(env(safe-area-inset-top) + 100px));
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 14px;
+  background: rgba(20, 40, 50, 0.45);
+  color: #fff;
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-variant-numeric: tabular-nums;
+}
+
+.pond-food-bag strong {
+  font-size: 1.1rem;
+}
+
+.pond-food-bag small {
+  opacity: 0.75;
+}
+
+.pond-action-hint {
+  position: absolute;
+  left: 50%;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 84px));
+  transform: translateX(-50%);
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(20, 40, 50, 0.4);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.82rem;
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pond-mobile-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: 0 16px;
+  pointer-events: none;
+}
+
+.pond-stick {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  position: relative;
   pointer-events: auto;
+  touch-action: none;
+}
+
+.pond-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.pond-action-btn {
+  min-width: 84px;
+  min-height: 84px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(40, 90, 80, 0.75);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  pointer-events: auto;
+  backdrop-filter: blur(6px);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pond-action-btn:disabled {
+  opacity: 0.45;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pond-mobile-controls {
+    display: none;
+  }
+
+  .pond-action-hint {
+    bottom: max(24px, env(safe-area-inset-bottom));
+  }
 }
 
 .mung-bubbles {
@@ -1534,26 +1825,23 @@ body.mung-open {
     font-size: 1rem;
   }
 
-  .mung-overlay.pond-mode .feed-machine:not([hidden]) {
-    left: 12px;
-    right: 12px;
-    bottom: max(12px, env(safe-area-inset-bottom));
-    width: auto;
-    justify-content: center;
-    min-height: 52px;
-  }
-
   .mung-overlay.pond-mode .mung-bottom {
     margin-bottom: 64px;
   }
 
-  .pond-water {
-    top: 22%;
-    bottom: 18%;
+  .pond-action-hint {
+    bottom: max(120px, calc(env(safe-area-inset-bottom) + 108px));
+    font-size: 0.78rem;
   }
 
-  .pond-fish {
-    font-size: 1.35em;
+  .pond-stick {
+    width: 96px;
+    height: 96px;
+  }
+
+  .pond-action-btn {
+    min-width: 76px;
+    min-height: 76px;
   }
 
   .mung-overlay.listen-mode .mung-top {

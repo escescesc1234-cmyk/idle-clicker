@@ -109,9 +109,57 @@
     <div class="mung-particles" id="mung-particles"></div>
     <div id="mung-ripples" class="mung-ripples"></div>
     <div id="pond-layer" class="pond-layer hidden" aria-hidden="true">
-      <div class="pond-water"></div>
-      <div id="pond-fish" class="pond-fish-layer"></div>
-      <div id="pond-food" class="pond-food-layer"></div>
+      <div id="pond-viewport" class="pond-viewport">
+        <div id="pond-world" class="pond-world">
+          <div class="chung-sky"></div>
+          <div class="chung-hills"></div>
+          <div class="chung-trees chung-trees-left" aria-hidden="true"></div>
+          <div class="chung-trees chung-trees-right" aria-hidden="true"></div>
+          <div class="chung-gate" aria-hidden="true">
+            <div class="chung-roof"></div>
+            <div class="chung-pillars"></div>
+            <span class="chung-gate-label">忠烈祠</span>
+          </div>
+          <div class="chung-path"></div>
+          <div class="chung-bench" aria-hidden="true"></div>
+          <div class="chung-sign" aria-hidden="true">義中池</div>
+
+          <div id="chung-pond" class="chung-pond">
+            <div class="chung-pond-rim"></div>
+            <div class="pond-water"></div>
+            <div id="pond-fish" class="pond-fish-layer"></div>
+            <div id="pond-food" class="pond-food-layer"></div>
+            <div id="pond-ripples" class="pond-ripples-layer"></div>
+          </div>
+
+          <button id="feed-machine" class="feed-machine" type="button" aria-label="먹이 자판기">
+            <span class="feed-machine-icon" aria-hidden="true">🎰</span>
+            <span class="feed-machine-text">
+              <strong>먹이 자판기</strong>
+              <small>가까이 가서 담기</small>
+            </span>
+          </button>
+
+          <div id="pond-player" class="pond-player" aria-hidden="true">
+            <span class="pond-player-body">🚶</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pond-hud">
+        <div class="pond-food-bag" title="들고 있는 먹이">
+          <span aria-hidden="true">🥜</span>
+          <strong id="held-food-count">0</strong>
+          <small>/ 12</small>
+        </div>
+        <p id="pond-action-hint" class="pond-action-hint">연못 주변을 걸어보세요</p>
+        <div class="pond-mobile-controls">
+          <div id="pond-stick" class="pond-stick" aria-label="이동">
+            <div id="pond-stick-knob" class="pond-stick-knob"></div>
+          </div>
+          <button id="pond-action-btn" class="pond-action-btn" type="button">담기</button>
+        </div>
+      </div>
     </div>
     <div id="mung-bubbles" class="mung-bubbles"></div>
     <canvas id="mung-draw-canvas" class="mung-draw-canvas"></canvas>
@@ -183,14 +231,6 @@
         <span id="mung-cloud-display" class="mung-cloud-display">0 구름</span>
       </div>
     </div>
-
-    <button id="feed-machine" class="feed-machine" type="button" aria-label="먹이 자판기" hidden>
-      <span class="feed-machine-icon" aria-hidden="true">🎰</span>
-      <span class="feed-machine-text">
-        <strong>먹이 자판기</strong>
-        <small>눌러서 물고기 먹이주기</small>
-      </span>
-    </button>
   </div>
 
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>

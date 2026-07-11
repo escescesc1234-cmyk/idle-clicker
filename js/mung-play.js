@@ -9,8 +9,28 @@ const MungPlay = (() => {
   let fish = [];
   let foods = [];
   let lastPondTick = 0;
+  let heldFood = 0;
+  let keys = { up: false, down: false, left: false, right: false };
+  let stickVec = { x: 0, y: 0 };
+  let stickActive = false;
+  let player = { x: 800, y: 860, facing: 1 };
+  let nearMachine = false;
+  let nearPond = false;
 
-  const FISH_KINDS = ["🐟", "🐠", "🐡", "🐟", "🐠"];
+  const WORLD_W = 1600;
+  const WORLD_H = 1100;
+  const PLAYER_SPEED = 190;
+  const MAX_HELD_FOOD = 12;
+  const MACHINE_POS = { x: 1295, y: 770 };
+  const POND_RECT = { x: 398, y: 318, w: 724, h: 344 };
+  const WALK_BOUNDS = { left: 120, right: 1480, top: 250, bottom: 1020 };
+  const FISH_KINDS = [
+    { emoji: "🐟", cls: "koi-orange" },
+    { emoji: "🐠", cls: "koi-red" },
+    { emoji: "🐟", cls: "koi-white" },
+    { emoji: "🐡", cls: "koi-orange" },
+    { emoji: "🐠", cls: "koi-red" },
+  ];
 
   const overlay = document.getElementById("mung-overlay");
   const center = document.getElementById("mung-center");
@@ -21,9 +41,17 @@ const MungPlay = (() => {
   const canvas = document.getElementById("mung-draw-canvas");
   const breathCircle = document.getElementById("breath-circle");
   const pondLayer = document.getElementById("pond-layer");
+  const pondWorld = document.getElementById("pond-world");
   const pondFishEl = document.getElementById("pond-fish");
   const pondFoodEl = document.getElementById("pond-food");
+  const pondRipplesEl = document.getElementById("pond-ripples");
   const feedMachine = document.getElementById("feed-machine");
+  const pondPlayer = document.getElementById("pond-player");
+  const heldFoodEl = document.getElementById("held-food-count");
+  const pondActionHint = document.getElementById("pond-action-hint");
+  const pondActionBtn = document.getElementById("pond-action-btn");
+  const pondStick = document.getElementById("pond-stick");
+  const pondStickKnob = document.getElementById("pond-stick-knob");
   const ctx = canvas.getContext("2d");
 
   const bubbleStatsPanel = document.getElementById("bubble-stats");
@@ -35,7 +63,7 @@ const MungPlay = (() => {
   const hints = {
     listen: "배경과 소리만 감상해요. 「감상 끝내기」로 나와요",
     cloud: "천천히 눌러도 괜찮아요",
-    ripple: "화면을 눌러 물결을 만들고, 자판기로 물고기에게 먹이를 주세요",
+    ripple: "충렬사 연못을 걸어다니며 자판기에서 먹이를 담아 잉어에게 주세요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
     draw: "손가락이나 마우스로 천천히 그려보세요",
     breath: "원이 커질 때 들이쉬고, 작아질 때 내쉬어요",
@@ -173,38 +201,169 @@ const MungPlay = (() => {
     }
   }
 
-  function pondBounds() {
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+  function pondInnerBounds() {
     return {
-      left: w * 0.06,
-      right: w * 0.94,
-      top: h * 0.28,
-      bottom: h * 0.82,
+      left: 24,
+      right: POND_RECT.w - 24,
+      top: 24,
+      bottom: POND_RECT.h - 24,
     };
   }
 
   function createFish(index) {
-    const bounds = pondBounds();
+    const bounds = pondInnerBounds();
+    const kind = FISH_KINDS[index % FISH_KINDS.length];
     const el = document.createElement("div");
-    el.className = "pond-fish";
-    el.textContent = FISH_KINDS[index % FISH_KINDS.length];
-    const size = 22 + Math.random() * 18;
+    el.className = `pond-fish ${kind.cls}`;
+    el.textContent = kind.emoji;
+    const size = 20 + Math.random() * 16;
     el.style.fontSize = `${size}px`;
     pondFishEl.appendChild(el);
 
-    const x = bounds.left + Math.random() * (bounds.right - bounds.left);
-    const y = bounds.top + Math.random() * (bounds.bottom - bounds.top);
     return {
       el,
-      x,
-      y,
-      vx: (Math.random() * 0.6 + 0.25) * (Math.random() < 0.5 ? -1 : 1),
-      vy: (Math.random() - 0.5) * 0.35,
-      size,
+      x: bounds.left + Math.random() * (bounds.right - bounds.left),
+      y: bounds.top + Math.random() * (bounds.bottom - bounds.top),
+      vx: (Math.random() * 0.55 + 0.2) * (Math.random() < 0.5 ? -1 : 1),
+      vy: (Math.random() - 0.5) * 0.3,
       turnTimer: 1 + Math.random() * 3,
-      targetFood: null,
     };
+  }
+
+  function updateHeldFoodUI() {
+    if (heldFoodEl) heldFoodEl.textContent = String(heldFood);
+  }
+
+  function updatePondPrompt() {
+    const distMachine = Math.hypot(player.x - MACHINE_POS.x, player.y - MACHINE_POS.y);
+    nearMachine = distMachine < 110;
+
+    const clampX = Math.max(POND_RECT.x, Math.min(POND_RECT.x + POND_RECT.w, player.x));
+    const clampY = Math.max(POND_RECT.y, Math.min(POND_RECT.y + POND_RECT.h, player.y));
+    let edgeDist;
+    if (
+      player.x >= POND_RECT.x
+      && player.x <= POND_RECT.x + POND_RECT.w
+      && player.y >= POND_RECT.y
+      && player.y <= POND_RECT.y + POND_RECT.h
+    ) {
+      edgeDist = Math.min(
+        player.x - POND_RECT.x,
+        POND_RECT.x + POND_RECT.w - player.x,
+        player.y - POND_RECT.y,
+        POND_RECT.y + POND_RECT.h - player.y,
+      );
+    } else {
+      edgeDist = Math.hypot(player.x - clampX, player.y - clampY);
+    }
+    nearPond = edgeDist < 58;
+
+    feedMachine.classList.toggle("nearby", nearMachine);
+
+    let text = "WASD / 조이스틱으로 걸어보세요";
+    let actionLabel = "담기";
+    let canAct = false;
+
+    if (nearMachine) {
+      if (heldFood >= MAX_HELD_FOOD) {
+        text = "먹이 주머니가 가득 찼어요";
+        actionLabel = "가득";
+      } else {
+        text = "자판기 근처 · 담기 / E / 자판기 터치";
+        actionLabel = "담기";
+        canAct = true;
+      }
+    } else if (nearPond && heldFood > 0) {
+      text = "연못 가 · 먹이 주기 / E / 액션 버튼";
+      actionLabel = "주기";
+      canAct = true;
+    } else if (heldFood > 0) {
+      text = `먹이 ${heldFood}개 · 연못 가로 가서 주세요`;
+      actionLabel = "주기";
+    } else {
+      text = "오른쪽 자판기로 가서 먹이를 담으세요";
+      actionLabel = "담기";
+    }
+
+    if (pondActionHint) pondActionHint.textContent = text;
+    if (pondActionBtn) {
+      pondActionBtn.textContent = actionLabel;
+      pondActionBtn.disabled = !canAct;
+    }
+  }
+
+  function collectFood() {
+    if (!active || activity !== "ripple") return;
+    if (!nearMachine) return;
+    if (heldFood >= MAX_HELD_FOOD) return;
+    const gain = Math.min(4, MAX_HELD_FOOD - heldFood);
+    heldFood += gain;
+    updateHeldFoodUI();
+    CloudAudio.playFeed();
+    updatePondPrompt();
+  }
+
+  function throwFood() {
+    if (!active || activity !== "ripple") return;
+    if (!nearPond || heldFood <= 0) return;
+
+    heldFood -= 1;
+    updateHeldFoodUI();
+    CloudAudio.playFeed();
+
+    const targetX = 40 + Math.random() * (POND_RECT.w - 80);
+    const targetY = 40 + Math.random() * (POND_RECT.h - 80);
+    const el = document.createElement("div");
+    el.className = "pond-pellet";
+    pondFoodEl.appendChild(el);
+
+    // Start from player relative to pond layer
+    const startX = player.x - POND_RECT.x;
+    const startY = player.y - POND_RECT.y;
+
+    foods.push({
+      el,
+      x: startX,
+      y: startY,
+      tx: targetX,
+      ty: targetY,
+      life: 14 + Math.random() * 5,
+      falling: true,
+    });
+
+    const ripple = document.createElement("div");
+    ripple.className = "pond-world-ripple";
+    ripple.style.left = `${targetX}px`;
+    ripple.style.top = `${targetY}px`;
+    pondRipplesEl.appendChild(ripple);
+    ripple.addEventListener("animationend", () => ripple.remove());
+    CloudAudio.playRipple();
+
+    updatePondPrompt();
+  }
+
+  function doPondAction() {
+    if (nearMachine) collectFood();
+    else if (nearPond && heldFood > 0) throwFood();
+  }
+
+  function updateCamera() {
+    const viewW = window.innerWidth;
+    const viewH = window.innerHeight;
+    let camX = player.x - viewW / 2;
+    let camY = player.y - viewH / 2;
+    camX = Math.max(0, Math.min(WORLD_W - viewW, camX));
+    camY = Math.max(0, Math.min(WORLD_H - viewH, camY));
+    if (WORLD_W < viewW) camX = (WORLD_W - viewW) / 2;
+    if (WORLD_H < viewH) camY = (WORLD_H - viewH) / 2;
+    pondWorld.style.transform = `translate(${-camX}px, ${-camY}px)`;
+  }
+
+  function isWalkBlocked(x, y) {
+    // Soft block deep water center so player walks around the pond
+    const deep = x > POND_RECT.x + 70 && x < POND_RECT.x + POND_RECT.w - 70
+      && y > POND_RECT.y + 70 && y < POND_RECT.y + POND_RECT.h - 70;
+    return deep;
   }
 
   function startPond() {
@@ -213,12 +372,25 @@ const MungPlay = (() => {
     pondLayer.classList.remove("hidden");
     pondLayer.hidden = false;
     pondLayer.setAttribute("aria-hidden", "false");
-    feedMachine.hidden = false;
-    feedMachine.classList.remove("hidden");
 
-    fish = Array.from({ length: 7 }, (_, i) => createFish(i));
+    const sceneName = document.getElementById("mung-scene-name");
+    if (sceneName) sceneName.textContent = "부산 충렬사 · 의중지";
+
+    player = { x: 800, y: 860, facing: 1 };
+    heldFood = 0;
+    updateHeldFoodUI();
+    keys = { up: false, down: false, left: false, right: false };
+    stickVec = { x: 0, y: 0 };
+    stickActive = false;
+    if (pondStickKnob) {
+      pondStickKnob.style.transform = "translate(0, 0)";
+    }
+
+    fish = Array.from({ length: 9 }, (_, i) => createFish(i));
     foods = [];
     lastPondTick = performance.now();
+    updateCamera();
+    updatePondPrompt();
     pondRaf = requestAnimationFrame(tickPond);
   }
 
@@ -227,43 +399,19 @@ const MungPlay = (() => {
     pondRaf = null;
     fish = [];
     foods = [];
+    heldFood = 0;
+    keys = { up: false, down: false, left: false, right: false };
+    stickVec = { x: 0, y: 0 };
+    stickActive = false;
     if (pondFishEl) pondFishEl.innerHTML = "";
     if (pondFoodEl) pondFoodEl.innerHTML = "";
+    if (pondRipplesEl) pondRipplesEl.innerHTML = "";
     if (pondLayer) {
       pondLayer.classList.add("hidden");
       pondLayer.hidden = true;
       pondLayer.setAttribute("aria-hidden", "true");
     }
-    if (feedMachine) {
-      feedMachine.hidden = true;
-      feedMachine.classList.add("hidden");
-    }
     if (clearMode) overlay.classList.remove("pond-mode");
-  }
-
-  function dispenseFood() {
-    if (!active || activity !== "ripple") return;
-    const bounds = pondBounds();
-    const count = 3 + Math.floor(Math.random() * 3);
-    CloudAudio.playFeed();
-
-    for (let i = 0; i < count; i += 1) {
-      const el = document.createElement("div");
-      el.className = "pond-pellet";
-      pondFoodEl.appendChild(el);
-      const startX = Math.min(window.innerWidth - 40, Math.max(40, feedMachine.getBoundingClientRect().left + 20));
-      const x = bounds.left + 40 + Math.random() * (bounds.right - bounds.left - 80);
-      const y = bounds.top + 20 + Math.random() * 40;
-      foods.push({
-        el,
-        x: startX + (Math.random() - 0.5) * 30,
-        y: 70 + Math.random() * 20,
-        tx: x,
-        ty: y + Math.random() * (bounds.bottom - bounds.top) * 0.45,
-        life: 12 + Math.random() * 6,
-        falling: true,
-      });
-    }
   }
 
   function nearestFood(fishItem) {
@@ -279,18 +427,48 @@ const MungPlay = (() => {
         best = food;
       }
     });
-    return bestDist < 280 ? best : null;
+    return bestDist < 220 ? best : null;
   }
 
   function tickPond(now) {
     if (!active || activity !== "ripple") return;
     const dt = Math.min(0.05, (now - lastPondTick) / 1000 || 0.016);
     lastPondTick = now;
-    const bounds = pondBounds();
+
+    let mx = 0;
+    let my = 0;
+    if (keys.left) mx -= 1;
+    if (keys.right) mx += 1;
+    if (keys.up) my -= 1;
+    if (keys.down) my += 1;
+    mx += stickVec.x;
+    my += stickVec.y;
+
+    const mag = Math.hypot(mx, my);
+    if (mag > 0.08) {
+      const nx = mx / mag;
+      const ny = my / mag;
+      let nextX = player.x + nx * PLAYER_SPEED * dt;
+      let nextY = player.y + ny * PLAYER_SPEED * dt;
+      nextX = Math.max(WALK_BOUNDS.left, Math.min(WALK_BOUNDS.right, nextX));
+      nextY = Math.max(WALK_BOUNDS.top, Math.min(WALK_BOUNDS.bottom, nextY));
+
+      if (!isWalkBlocked(nextX, player.y)) player.x = nextX;
+      if (!isWalkBlocked(player.x, nextY)) player.y = nextY;
+      if (Math.abs(nx) > 0.2) player.facing = nx < 0 ? -1 : 1;
+    }
+
+    pondPlayer.style.left = `${player.x}px`;
+    pondPlayer.style.top = `${player.y}px`;
+    pondPlayer.style.transform = `scaleX(${player.facing})`;
+    updateCamera();
+    updatePondPrompt();
+
+    const bounds = pondInnerBounds();
 
     foods = foods.filter((food) => {
       if (food.falling) {
-        food.x += (food.tx - food.x) * Math.min(1, dt * 2.2);
+        food.x += (food.tx - food.x) * Math.min(1, dt * 2.4);
         food.y += (food.ty - food.y) * Math.min(1, dt * 2.8);
         if (Math.hypot(food.tx - food.x, food.ty - food.y) < 8) food.falling = false;
       }
@@ -307,30 +485,28 @@ const MungPlay = (() => {
 
     fish.forEach((f) => {
       const target = nearestFood(f);
-      f.targetFood = target;
-
       if (target) {
         const dx = target.x - f.x;
         const dy = target.y - f.y;
         const dist = Math.hypot(dx, dy) || 1;
-        f.vx += (dx / dist) * 1.8 * dt;
-        f.vy += (dy / dist) * 1.8 * dt;
-        if (dist < 18) {
+        f.vx += (dx / dist) * 1.7 * dt;
+        f.vy += (dy / dist) * 1.7 * dt;
+        if (dist < 16) {
           target.life = 0;
-          f.vx *= 0.4;
-          f.vy *= 0.4;
+          f.vx *= 0.35;
+          f.vy *= 0.35;
         }
       } else {
         f.turnTimer -= dt;
         if (f.turnTimer <= 0) {
-          f.turnTimer = 1.5 + Math.random() * 3;
-          f.vx += (Math.random() - 0.5) * 0.8;
-          f.vy += (Math.random() - 0.5) * 0.5;
+          f.turnTimer = 1.4 + Math.random() * 2.8;
+          f.vx += (Math.random() - 0.5) * 0.7;
+          f.vy += (Math.random() - 0.5) * 0.45;
         }
       }
 
       const speed = Math.hypot(f.vx, f.vy);
-      const maxSpeed = target ? 95 : 55;
+      const maxSpeed = target ? 90 : 48;
       if (speed > maxSpeed) {
         f.vx = (f.vx / speed) * maxSpeed;
         f.vy = (f.vy / speed) * maxSpeed;
@@ -356,8 +532,7 @@ const MungPlay = (() => {
         f.vy = -Math.abs(f.vy);
       }
 
-      const facingLeft = f.vx < 0;
-      f.el.style.transform = `translate(-50%, -50%) scaleX(${facingLeft ? -1 : 1})`;
+      f.el.style.transform = `translate(-50%, -50%) scaleX(${f.vx < 0 ? -1 : 1})`;
       f.el.style.left = `${f.x}px`;
       f.el.style.top = `${f.y}px`;
     });
@@ -386,27 +561,6 @@ const MungPlay = (() => {
     lastPoint = { x, y };
   }
 
-  function onPondPointer(event) {
-    if (!active || activity !== "ripple") return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    event.stopPropagation();
-    createRipple(event.clientX, event.clientY);
-  }
-
-  function onOverlayPointer(event) {
-    if (!active) return;
-    if (activity !== "ripple") return;
-    if (event.pointerType === "mouse" && event.button !== 0) return;
-    if (
-      event.target.closest(
-        "button, a, input, textarea, select, .mung-top, .mung-activities, .mung-side-panel, .mung-players, .feed-machine, .mung-exit-listen, .mung-cloud-btn, .pond-layer",
-      )
-    ) {
-      return;
-    }
-    createRipple(event.clientX, event.clientY);
-  }
-
   function onCanvasDown(event) {
     if (activity !== "draw") return;
     drawing = true;
@@ -427,6 +581,50 @@ const MungPlay = (() => {
   function getTouchPoint(event) {
     const t = event.touches[0] || event.changedTouches[0];
     return t ? { clientX: t.clientX, clientY: t.clientY } : null;
+  }
+
+  function setKeyFromCode(code, pressed) {
+    if (code === "KeyW" || code === "ArrowUp") keys.up = pressed;
+    if (code === "KeyS" || code === "ArrowDown") keys.down = pressed;
+    if (code === "KeyA" || code === "ArrowLeft") keys.left = pressed;
+    if (code === "KeyD" || code === "ArrowRight") keys.right = pressed;
+  }
+
+  function onKeyDown(event) {
+    if (!active || activity !== "ripple") return;
+    if (event.target.matches("input, textarea, select")) return;
+    setKeyFromCode(event.code, true);
+    if (event.code === "KeyE" || event.code === "Space") {
+      event.preventDefault();
+      doPondAction();
+    }
+  }
+
+  function onKeyUp(event) {
+    setKeyFromCode(event.code, false);
+  }
+
+  function updateStickFromPoint(clientX, clientY) {
+    const rect = pondStick.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    let dx = clientX - cx;
+    let dy = clientY - cy;
+    const max = rect.width * 0.34;
+    const dist = Math.hypot(dx, dy) || 1;
+    if (dist > max) {
+      dx = (dx / dist) * max;
+      dy = (dy / dist) * max;
+    }
+    stickVec.x = dx / max;
+    stickVec.y = dy / max;
+    pondStickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+  }
+
+  function resetStick() {
+    stickActive = false;
+    stickVec = { x: 0, y: 0 };
+    if (pondStickKnob) pondStickKnob.style.transform = "translate(0, 0)";
   }
 
   function start() {
@@ -475,16 +673,38 @@ const MungPlay = (() => {
     btn.addEventListener("click", () => setActivity(btn.dataset.activity));
   });
 
-  overlay.addEventListener("pointerdown", onOverlayPointer);
-  pondLayer.addEventListener("pointerdown", onPondPointer);
   feedMachine.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    dispenseFood();
+    if (nearMachine) collectFood();
+    else {
+      pondActionHint.textContent = "자판기 가까이 가서 먹이를 담으세요";
+    }
   });
-  feedMachine.addEventListener("pointerdown", (event) => {
+
+  pondActionBtn.addEventListener("click", (event) => {
+    event.preventDefault();
     event.stopPropagation();
+    doPondAction();
   });
+
+  pondStick.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    stickActive = true;
+    pondStick.setPointerCapture(event.pointerId);
+    updateStickFromPoint(event.clientX, event.clientY);
+  });
+  pondStick.addEventListener("pointermove", (event) => {
+    if (!stickActive) return;
+    updateStickFromPoint(event.clientX, event.clientY);
+  });
+  pondStick.addEventListener("pointerup", resetStick);
+  pondStick.addEventListener("pointercancel", resetStick);
+
+  window.addEventListener("keydown", onKeyDown);
+  window.addEventListener("keyup", onKeyUp);
+
   canvas.addEventListener("mousedown", onCanvasDown);
   canvas.addEventListener("mousemove", onCanvasMove);
   window.addEventListener("mouseup", onCanvasUp);
@@ -503,6 +723,7 @@ const MungPlay = (() => {
   window.addEventListener("touchend", onCanvasUp);
   window.addEventListener("resize", () => {
     if (active && activity === "draw") resizeCanvas();
+    if (active && activity === "ripple") updateCamera();
   });
 
   return {
