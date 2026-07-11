@@ -2,6 +2,8 @@ const Pond3D = (() => {
   const SCALE = 0.04;
   const ORIGIN_X = 800;
   const ORIGIN_Z = 550;
+  const POND_2D = { w: 724, h: 344 };
+  const WATER = { cx: -1.2, cz: -3.2, rx: 7.4, rz: 4.6, y: 0.22 };
 
   let root = null;
   let renderer = null;
@@ -17,10 +19,28 @@ const Pond3D = (() => {
   let foodMeshes = [];
   let remoteMeshes = new Map();
   let camTarget = new THREE.Vector3();
-  let camPos = new THREE.Vector3(0, 18, 22);
+  let camPos = new THREE.Vector3(0, 12, 16);
+  let orbitYaw = 0.35;
+  let orbitPitch = 0.38;
+  let orbitDragging = false;
+  let orbitLast = { x: 0, y: 0 };
 
   function to3(x, y, height = 0) {
     return new THREE.Vector3((x - ORIGIN_X) * SCALE, height, (y - ORIGIN_Z) * SCALE);
+  }
+
+  function pondLocalTo3(localX, localY, height) {
+    const u = (localX / POND_2D.w) * 2 - 1;
+    const v = (localY / POND_2D.h) * 2 - 1;
+    let x = u * WATER.rx * 0.92;
+    let z = v * WATER.rz * 0.92;
+    const e = (x * x) / (WATER.rx * WATER.rx) + (z * z) / (WATER.rz * WATER.rz);
+    if (e > 0.98) {
+      const s = Math.sqrt(0.98 / e);
+      x *= s;
+      z *= s;
+    }
+    return new THREE.Vector3(WATER.cx + x, height, WATER.cz + z);
   }
 
   function makeMat(color, opts = {}) {
@@ -94,20 +114,80 @@ const Pond3D = (() => {
     return g;
   }
 
-  function createKoi(color) {
+  function createKoi(styleIndex) {
+    const styles = [
+      { body: 0xfff6ea, spot: 0xe23b2e, fin: 0xffd7c2 },
+      { body: 0xf4a04a, spot: 0xffffff, fin: 0xe8893a },
+      { body: 0x1f1f22, spot: 0xe23b2e, fin: 0x333338 },
+      { body: 0xfff8f0, spot: 0xf08a3a, fin: 0xffe0c8 },
+      { body: 0xe04838, spot: 0xfff4e8, fin: 0xc43a2c },
+    ];
+    const style = styles[styleIndex % styles.length];
     const g = new THREE.Group();
+    g.userData.phase = Math.random() * Math.PI * 2;
+
     const body = addShadow(new THREE.Mesh(
-      new THREE.SphereGeometry(0.22, 8, 6),
-      makeMat(color, { roughness: 0.45 }),
+      new THREE.SphereGeometry(0.28, 12, 10),
+      makeMat(style.body, { roughness: 0.35, metalness: 0.08 }),
     ));
-    body.scale.set(1.8, 0.7, 0.9);
-    const tail = addShadow(new THREE.Mesh(
-      new THREE.ConeGeometry(0.16, 0.28, 5),
-      makeMat(color, { roughness: 0.45 }),
+    body.scale.set(2.1, 0.72, 0.95);
+
+    const head = addShadow(new THREE.Mesh(
+      new THREE.SphereGeometry(0.2, 10, 8),
+      makeMat(style.body, { roughness: 0.35 }),
     ));
-    tail.rotation.z = Math.PI / 2;
-    tail.position.x = -0.38;
-    g.add(body, tail);
+    head.scale.set(1.15, 0.85, 0.9);
+    head.position.x = 0.42;
+
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), makeMat(0x111111));
+    const eyeR = eyeL.clone();
+    eyeL.position.set(0.52, 0.06, 0.12);
+    eyeR.position.set(0.52, 0.06, -0.12);
+
+    const spot = addShadow(new THREE.Mesh(
+      new THREE.SphereGeometry(0.14, 8, 6),
+      makeMat(style.spot, { roughness: 0.4 }),
+    ));
+    spot.scale.set(1.1, 0.55, 0.8);
+    spot.position.set(0.05, 0.08, 0.08);
+
+    const spot2 = spot.clone();
+    spot2.position.set(-0.2, 0.05, -0.1);
+    spot2.scale.set(0.8, 0.45, 0.65);
+
+    const tail = new THREE.Group();
+    tail.name = "tail";
+    const tailMat = makeMat(style.fin, { roughness: 0.45, transparent: true, opacity: 0.92 });
+    const tailA = addShadow(new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.42, 6), tailMat));
+    tailA.rotation.z = Math.PI / 2;
+    tailA.rotation.y = 0.35;
+    tailA.position.set(-0.55, 0.02, 0.08);
+    const tailB = addShadow(new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.38, 6), tailMat));
+    tailB.rotation.z = Math.PI / 2;
+    tailB.rotation.y = -0.35;
+    tailB.position.set(-0.52, 0.02, -0.08);
+    tail.add(tailA, tailB);
+
+    const dorsal = addShadow(new THREE.Mesh(
+      new THREE.ConeGeometry(0.1, 0.28, 5),
+      makeMat(style.fin, { roughness: 0.5, transparent: true, opacity: 0.85 }),
+    ));
+    dorsal.position.set(0.05, 0.28, 0);
+    dorsal.rotation.z = -0.2;
+
+    const pecL = addShadow(new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 4),
+      makeMat(style.fin, { roughness: 0.5, transparent: true, opacity: 0.8 }),
+    ));
+    pecL.scale.set(0.9, 0.2, 1.4);
+    pecL.position.set(0.15, -0.02, 0.28);
+    pecL.rotation.y = 0.4;
+    const pecR = pecL.clone();
+    pecR.position.z = -0.28;
+    pecR.rotation.y = -0.4;
+
+    g.add(body, head, eyeL, eyeR, spot, spot2, tail, dorsal, pecL, pecR);
+    g.scale.setScalar(0.85 + (styleIndex % 3) * 0.12);
     return g;
   }
 
@@ -150,13 +230,12 @@ const Pond3D = (() => {
     path.receiveShadow = true;
     scene.add(path);
 
-    // Pond rim + water
     const rim = addShadow(new THREE.Mesh(
       new THREE.TorusGeometry(7.2, 0.55, 10, 40),
       makeMat(0x7a756c, { roughness: 0.9 }),
     ));
     rim.rotation.x = Math.PI / 2;
-    rim.position.set(-1.2, 0.2, -3.2);
+    rim.position.set(WATER.cx, 0.2, WATER.cz);
     rim.scale.set(1.35, 1, 0.85);
     scene.add(rim);
 
@@ -165,7 +244,7 @@ const Pond3D = (() => {
       makeMat(0x2a6270, { roughness: 1 }),
     );
     basin.rotation.x = -Math.PI / 2;
-    basin.position.set(-1.2, 0.02, -3.2);
+    basin.position.set(WATER.cx, 0.02, WATER.cz);
     basin.scale.set(1.35, 1, 0.85);
     basin.receiveShadow = true;
     scene.add(basin);
@@ -175,11 +254,10 @@ const Pond3D = (() => {
       makeMat(0x4a9aa0, { roughness: 0.2, metalness: 0.08, transparent: true, opacity: 0.82 }),
     );
     waterMesh.rotation.x = -Math.PI / 2;
-    waterMesh.position.set(-1.2, 0.28, -3.2);
+    waterMesh.position.set(WATER.cx, WATER.y + 0.06, WATER.cz);
     waterMesh.scale.set(1.35, 1, 0.85);
     scene.add(waterMesh);
 
-    // Gate
     const gate = new THREE.Group();
     const pillarL = addShadow(new THREE.Mesh(new THREE.BoxGeometry(0.35, 2.2, 0.35), makeMat(0xd9c4a0)));
     const pillarR = pillarL.clone();
@@ -194,14 +272,12 @@ const Pond3D = (() => {
     gate.add(pillarL, pillarR, roof);
     scene.add(gate);
 
-    // Trees
     [
       [-14, -6, "pine"], [-12, -9, "plum"], [-15, 2, "pine"],
       [13, -7, "plum"], [15, -3, "pine"], [12, 4, "plum"],
       [-10, 10, "pine"], [10, 11, "plum"],
     ].forEach(([x, z, kind]) => scene.add(createTree(x, z, kind)));
 
-    // Bench
     const bench = addShadow(new THREE.Mesh(
       new THREE.BoxGeometry(2.2, 0.25, 0.7),
       makeMat(0x8b5a3c),
@@ -209,7 +285,6 @@ const Pond3D = (() => {
     bench.position.set(-9, 0.45, 6.5);
     scene.add(bench);
 
-    // Sign
     const signPost = addShadow(new THREE.Mesh(
       new THREE.CylinderGeometry(0.06, 0.06, 1.2, 6),
       makeMat(0x5a4030, { flat: true }),
@@ -222,7 +297,6 @@ const Pond3D = (() => {
     signBoard.position.set(-8.5, 1.35, -8);
     scene.add(signPost, signBoard);
 
-    // Feed machine
     machineMesh = new THREE.Group();
     const cabinet = addShadow(new THREE.Mesh(
       new THREE.BoxGeometry(1.1, 1.8, 0.8),
@@ -270,10 +344,44 @@ const Pond3D = (() => {
     renderer.setSize(w, h, false);
   }
 
+  function isOrbitBlocked(target) {
+    return !!target?.closest?.(
+      "button, input, textarea, select, .pond-stick, .pond-action-btn, .mung-top, .mung-activities, .mung-side-panel, .pond-food-bag",
+    );
+  }
+
+  function onOrbitDown(event) {
+    if (!running) return;
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    if (isOrbitBlocked(event.target)) return;
+    orbitDragging = true;
+    orbitLast = { x: event.clientX, y: event.clientY };
+  }
+
+  function onOrbitMove(event) {
+    if (!running || !orbitDragging) return;
+    const dx = event.clientX - orbitLast.x;
+    const dy = event.clientY - orbitLast.y;
+    orbitLast = { x: event.clientX, y: event.clientY };
+    orbitYaw -= dx * 0.005;
+    orbitPitch = Math.max(0.12, Math.min(1.15, orbitPitch + dy * 0.004));
+  }
+
+  function onOrbitUp() {
+    orbitDragging = false;
+  }
+
+  function bindOrbit(on) {
+    const method = on ? "addEventListener" : "removeEventListener";
+    window[method]("pointerdown", onOrbitDown);
+    window[method]("pointermove", onOrbitMove);
+    window[method]("pointerup", onOrbitUp);
+    window[method]("pointercancel", onOrbitUp);
+  }
+
   function syncFish(fishList) {
     while (fishMeshes.length < fishList.length) {
-      const colors = [0xf08a3a, 0xe04838, 0xf0ece4];
-      const mesh = createKoi(colors[fishMeshes.length % colors.length]);
+      const mesh = createKoi(fishMeshes.length);
       scene.add(mesh);
       fishMeshes.push(mesh);
     }
@@ -281,15 +389,18 @@ const Pond3D = (() => {
       const mesh = fishMeshes.pop();
       scene.remove(mesh);
     }
+    const t = performance.now() * 0.001;
     fishList.forEach((f, i) => {
       const mesh = fishMeshes[i];
-      // fish coords are relative to pond rect in 2D logic
-      const worldX = 398 + f.x;
-      const worldY = 318 + f.y;
-      const p = to3(worldX, worldY, 0.35 + Math.sin(performance.now() * 0.004 + i) * 0.05);
-      mesh.position.lerp(p, 0.35);
-      mesh.rotation.y = Math.atan2(f.vx, f.vy) + (f.vx < 0 ? Math.PI : 0);
-      mesh.rotation.z = Math.sin(performance.now() * 0.01 + i) * 0.15;
+      const bob = Math.sin(t * 2.2 + (mesh.userData.phase || 0)) * 0.04;
+      const depth = WATER.y - 0.08 + bob;
+      const p = pondLocalTo3(f.x, f.y, depth);
+      mesh.position.lerp(p, 0.45);
+      mesh.rotation.y = Math.atan2(f.vx, f.vy);
+      mesh.rotation.z = Math.sin(t * 5 + i) * 0.12;
+      mesh.rotation.x = Math.sin(t * 3.5 + i) * 0.08;
+      const tail = mesh.getObjectByName("tail");
+      if (tail) tail.rotation.y = Math.sin(t * 8 + i) * 0.45;
       mesh.visible = true;
     });
   }
@@ -309,10 +420,10 @@ const Pond3D = (() => {
     }
     foodList.forEach((food, i) => {
       const mesh = foodMeshes[i];
-      const worldX = 398 + food.x;
-      const worldY = 318 + food.y;
-      const lift = food.falling ? 0.9 + Math.sin((food.arc || 0) * Math.PI) * 1.2 : 0.38;
-      mesh.position.copy(to3(worldX, worldY, lift));
+      const lift = food.falling
+        ? WATER.y + 0.7 + Math.sin((food.arc || 0) * Math.PI) * 1.1
+        : WATER.y + 0.05;
+      mesh.position.copy(pondLocalTo3(food.x, food.y, lift));
       mesh.visible = food.life > 0;
     });
   }
@@ -324,8 +435,6 @@ const Pond3D = (() => {
       let mesh = remoteMeshes.get(id);
       if (!mesh) {
         mesh = createPlayerMesh(0xc45a6a);
-        const label = entry.nameEl?.textContent || "친구";
-        mesh.userData.name = label;
         scene.add(mesh);
         remoteMeshes.set(id, mesh);
       }
@@ -349,22 +458,21 @@ const Pond3D = (() => {
     playerMesh.rotation.y = player.facing < 0 ? Math.PI / 2 : -Math.PI / 2;
     playerMesh.position.y = Math.abs(Math.sin(performance.now() * 0.012)) * (state.walking ? 0.08 : 0);
 
-    if (machineMesh) {
-      machineMesh.scale.setScalar(nearMachine ? 1.06 : 1);
-    }
+    if (machineMesh) machineMesh.scale.setScalar(nearMachine ? 1.06 : 1);
 
     syncFish(fish || []);
     syncFood((foods || []).filter((f) => f.life > 0));
     if (remotes) syncRemotes(remotes);
 
     camTarget.set(playerMesh.position.x, 1.2, playerMesh.position.z);
-    const back = player.facing < 0 ? 1 : -1;
+    const dist = 13 + orbitPitch * 2;
+    const height = 4.5 + orbitPitch * 8;
     const desired = new THREE.Vector3(
-      playerMesh.position.x + back * 0.5,
-      11.5,
-      playerMesh.position.z + 14,
+      playerMesh.position.x + Math.sin(orbitYaw) * dist,
+      height,
+      playerMesh.position.z + Math.cos(orbitYaw) * dist,
     );
-    camPos.lerp(desired, 0.08);
+    camPos.lerp(desired, orbitDragging ? 0.2 : 0.1);
     camera.position.copy(camPos);
     camera.lookAt(camTarget);
   }
@@ -373,7 +481,7 @@ const Pond3D = (() => {
     if (!running) return;
     raf = requestAnimationFrame(renderLoop);
     if (waterMesh) {
-      waterMesh.position.y = 0.28 + Math.sin(clock.getElapsedTime() * 1.3) * 0.03;
+      waterMesh.position.y = WATER.y + 0.06 + Math.sin(clock.getElapsedTime() * 1.3) * 0.025;
     }
     renderer.render(scene, camera);
   }
@@ -381,7 +489,11 @@ const Pond3D = (() => {
   function start() {
     if (!ensureRenderer()) return false;
     running = true;
+    orbitYaw = 0.35;
+    orbitPitch = 0.38;
+    orbitDragging = false;
     root.classList.add("active");
+    bindOrbit(true);
     resize();
     if (!raf) renderLoop();
     return true;
@@ -389,6 +501,8 @@ const Pond3D = (() => {
 
   function stop() {
     running = false;
+    orbitDragging = false;
+    bindOrbit(false);
     if (raf) cancelAnimationFrame(raf);
     raf = null;
     if (root) root.classList.remove("active");

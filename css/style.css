@@ -726,7 +726,13 @@ body.mung-open {
   inset: 0;
   z-index: 3;
   display: none;
-  pointer-events: none;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.pond-3d-root:active {
+  cursor: grabbing;
 }
 
 .pond-3d-root.active {
