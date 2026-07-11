@@ -721,6 +721,36 @@ body.mung-open {
   background: #9db8a8;
 }
 
+.pond-3d-root {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  pointer-events: none;
+}
+
+.pond-3d-root.active {
+  display: block;
+}
+
+.pond-3d-root canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.mung-overlay.pond-mode.pond-3d .pond-world {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.mung-overlay.pond-mode.pond-3d #feed-machine,
+.mung-overlay.pond-mode.pond-3d #pond-player,
+.mung-overlay.pond-mode.pond-3d #pond-remotes {
+  opacity: 0;
+  pointer-events: none;
+}
+
 .pond-world {
   position: absolute;
   left: 0;

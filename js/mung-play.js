@@ -18,8 +18,25 @@ const MungPlay = (() => {
   let nearMachine = false;
   let nearPond = false;
   let footstepTimer = 0;
+  let lastMoveBroadcast = 0;
+  let use3D = false;
+  const remotePlayers = new Map();
+
+  function syncPond3D(walking) {
+    if (!use3D || !window.Pond3D) return;
+    Pond3D.sync({
+      player,
+      fish,
+      foods,
+      remotes: remotePlayers,
+      walking: !!walking,
+      nearMachine,
+    });
+  }
+
   const feedDispenseFx = document.getElementById("feed-dispense-fx");
   const foodBagEl = document.querySelector(".pond-food-bag");
+  const pondRemotesEl = document.getElementById("pond-remotes");
 
   const WORLD_W = 1600;
   const WORLD_H = 1100;
@@ -63,7 +80,7 @@ const MungPlay = (() => {
   const hints = {
     listen: "배경과 소리만 감상해요. 「감상 끝내기」로 나와요",
     cloud: "천천히 눌러도 괜찮아요",
-    ripple: "충렬사 연못을 걸어다니며 자판기에서 먹이를 담아 잉어에게 주세요",
+    ripple: "3D 충렬사 연못을 걸어다니며 자판기에서 먹이를 담아 잉어에게 주세요",
     bubble: "떠오르는 거품을 톡톡 터뜨려요",
     draw: "손가락이나 마우스로 천천히 그려보세요",
     breath: "원이 커질 때 들이쉬고, 작아질 때 내쉬어요",
@@ -84,6 +101,7 @@ const MungPlay = (() => {
   }
 
   function showBubbleStats(show) {
+    if (!bubbleStatsPanel) return;
     bubbleStatsPanel.classList.toggle("hidden", !show);
     if (!show) bubbleStatsPanel.classList.add("collapsed");
   }
@@ -374,6 +392,15 @@ const MungPlay = (() => {
       f.el.classList.add("excited");
     });
 
+    if (window.GameBridge) {
+      window.GameBridge.broadcastMungEvent("pond-feed", {
+        sx: startX,
+        sy: startY,
+        tx: targetX,
+        ty: targetY,
+      });
+    }
+
     updatePondPrompt();
   }
 
@@ -445,7 +472,90 @@ const MungPlay = (() => {
     updateCamera(1);
     updatePondPrompt();
     if (CloudAudio.startPondAmbient) CloudAudio.startPondAmbient();
+    use3D = !!(window.Pond3D && Pond3D.isReady() && Pond3D.start());
+    overlay.classList.toggle("pond-3d", use3D);
+    if (use3D) syncPond3D(false);
     pondRaf = requestAnimationFrame(tickPond);
+    broadcastPondMove(false);
+  }
+
+  function ensureRemotePlayer(id, name) {
+    if (!pondRemotesEl) return null;
+    let entry = remotePlayers.get(id);
+    if (entry) {
+      if (name && entry.nameEl) entry.nameEl.textContent = name;
+      return entry;
+    }
+    const el = document.createElement("div");
+    el.className = "pond-player remote";
+    el.innerHTML = `
+      <span class="pond-player-shadow"></span>
+      <span class="pond-player-figure">
+        <span class="pp-head"></span>
+        <span class="pp-body"></span>
+        <span class="pp-leg l"></span>
+        <span class="pp-leg r"></span>
+      </span>
+      <span class="pond-player-name"></span>
+    `;
+    const nameEl = el.querySelector(".pond-player-name");
+    nameEl.textContent = name || "친구";
+    pondRemotesEl.appendChild(el);
+    entry = { el, nameEl, x: 800, y: 860, facing: 1 };
+    remotePlayers.set(id, entry);
+    return entry;
+  }
+
+  function syncRemotePlayer(id, data) {
+    const entry = ensureRemotePlayer(id, data.name);
+    if (!entry) return;
+    entry.x = data.x;
+    entry.y = data.y;
+    entry.facing = data.facing || 1;
+    entry.el.style.left = `${entry.x}px`;
+    entry.el.style.top = `${entry.y}px`;
+    entry.el.style.transform = `scaleX(${entry.facing})`;
+    entry.el.classList.toggle("walking", !!data.walking);
+  }
+
+  function clearRemotePlayers() {
+    remotePlayers.clear();
+    if (pondRemotesEl) pondRemotesEl.innerHTML = "";
+  }
+
+  function broadcastPondMove(walking) {
+    if (!window.GameBridge) return;
+    const now = performance.now();
+    if (now - lastMoveBroadcast < 90) return;
+    lastMoveBroadcast = now;
+    window.GameBridge.broadcastMungEvent("pond-move", {
+      x: player.x,
+      y: player.y,
+      facing: player.facing,
+      walking: !!walking,
+      name: window.Multiplayer?.getPlayerName?.() || "친구",
+    });
+  }
+
+  function applyRemoteFeed(data) {
+    const el = document.createElement("div");
+    el.className = "pond-pellet";
+    pondFoodEl.appendChild(el);
+    foods.push({
+      el,
+      x: data.sx,
+      y: data.sy,
+      tx: data.tx,
+      ty: data.ty,
+      life: 16,
+      falling: true,
+      splash: false,
+      arc: 0,
+    });
+    fish.forEach((f) => {
+      f.excited = 2;
+      f.el.classList.add("excited");
+    });
   }
 
   function stopPond(clearMode = true) {
@@ -462,12 +572,17 @@ const MungPlay = (() => {
     if (pondFishEl) pondFishEl.innerHTML = "";
     if (pondFoodEl) pondFoodEl.innerHTML = "";
     if (pondRipplesEl) pondRipplesEl.innerHTML = "";
+    clearRemotePlayers();
+    if (window.GameBridge) window.GameBridge.broadcastMungEvent("pond-leave", {});
     if (pondLayer) {
       pondLayer.classList.add("hidden");
       pondLayer.hidden = true;
       pondLayer.setAttribute("aria-hidden", "true");
     }
     if (CloudAudio.stopPondAmbient) CloudAudio.stopPondAmbient();
+    if (window.Pond3D) Pond3D.stop();
+    use3D = false;
+    overlay.classList.remove("pond-3d");
     if (clearMode) overlay.classList.remove("pond-mode");
   }
 
@@ -551,12 +666,15 @@ const MungPlay = (() => {
         footstepTimer = 0.34;
         if (CloudAudio.playFootstep) CloudAudio.playFootstep();
       }
+      broadcastPondMove(true);
     } else {
       footstepTimer = 0;
+      broadcastPondMove(false);
     }
 
     updateCamera(dt);
     updatePondPrompt();
+    syncPond3D(moving);
 
     const bounds = pondInnerBounds();
 
@@ -743,7 +861,7 @@ const MungPlay = (() => {
     active = true;
     myBubblePops = 0;
     updateBubbleUI();
-    setActivity("cloud");
+    setActivity("ripple");
     resizeCanvas();
     requestAnimationFrame(fadeCanvas);
     if (window.Multiplayer) Multiplayer.onMungEnter();
@@ -767,13 +885,26 @@ const MungPlay = (() => {
     if (type === "bubble-pop" && window.Multiplayer) {
       Multiplayer.setPlayerBubblePops(data.playerId, data.total);
     }
+    if (type === "pond-move" && data.playerId) {
+      if (activity === "ripple") syncRemotePlayer(data.playerId, data);
+    }
+    if (type === "pond-feed" && activity === "ripple") {
+      applyRemoteFeed(data);
+    }
+    if (type === "pond-leave" && data.playerId) {
+      const entry = remotePlayers.get(data.playerId);
+      if (entry) {
+        entry.el.remove();
+        remotePlayers.delete(data.playerId);
+      }
+    }
   }
 
   function getBubblePops() {
     return myBubblePops;
   }
 
-  bubbleStatsToggle.addEventListener("click", () => {
+  bubbleStatsToggle?.addEventListener("click", () => {
     bubbleStatsPanel.classList.toggle("collapsed");
   });
 
@@ -835,7 +966,10 @@ const MungPlay = (() => {
   window.addEventListener("touchend", onCanvasUp);
   window.addEventListener("resize", () => {
     if (active && activity === "draw") resizeCanvas();
-    if (active && activity === "ripple") updateCamera(1);
+    if (active && activity === "ripple") {
+      updateCamera(1);
+      if (window.Pond3D) Pond3D.resize();
+    }
   });
 
   return {
